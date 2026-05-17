@@ -23,7 +23,7 @@ Construido con **Bun** + **OpenTUI** (core Zig nativo) para máxima velocidad y 
 | 🎮 Menú + navegación por flechas     | ✅     |
 | 📊 WPM en tiempo real                | ✅     |
 | 🎯 Accuracy + errores                | ✅     |
-| ⌨️ Backspace borra última letra       | ✅     |
+| ⌨️ Backspace borra última letra      | ✅     |
 | 🔄 Tab reinicia, Esc vuelve al menú  | ✅     |
 | 🌙 Offline, sin cuenta, sin tracking | ✅     |
 
@@ -76,14 +76,14 @@ bun build ./src/index.ts --compile --outfile monkeyterm
 
 ### Controles
 
-| Tecla              | Acción                   |
-| ------------------ | ------------------------ |
-| `Backspace`        | Borra última letra       |
-| `↑ ↓`             | Navegar opciones (menú)  |
-| `Enter`            | Empezar test             |
-| `Tab`              | Reinicia el test         |
-| `Esc`              | Vuelve al menú principal |
-| `Ctrl + C`         | Sale de la app           |
+| Tecla       | Acción                   |
+| ----------- | ------------------------ |
+| `Backspace` | Borra última letra       |
+| `↑ ↓`       | Navegar opciones (menú)  |
+| `Enter`     | Empezar test             |
+| `Tab`       | Reinicia el test         |
+| `Esc`       | Vuelve al menú principal |
+| `Ctrl + C`  | Sale de la app           |
 
 ---
 

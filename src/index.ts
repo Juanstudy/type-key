@@ -89,7 +89,6 @@ function wordStr(word: Word): string {
 // ── Screen factories ──────────────────────────────────────────────────────
 
 let renderer: CliRenderer | null = null;
-let currentBoxId: string | null = null;
 
 function createBox(): ScreenBox {
 	return Box({
@@ -103,11 +102,13 @@ function createBox(): ScreenBox {
 
 function switchScreen(box: ScreenBox): void {
 	if (!renderer) return;
-	if (currentBoxId) {
-		renderer.root.remove(currentBoxId);
+	// Remove all existing children from root before adding new one
+	const existing = renderer.root.getChildren();
+	for (let i = existing.length - 1; i >= 0; i--) {
+		const child = existing[i];
+		if (child) renderer.root.remove((child as any).id ?? (child as any)._id);
 	}
 	renderer.root.add(box);
-	currentBoxId = (box as any).id;
 	renderer.requestRender();
 }
 
