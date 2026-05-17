@@ -10,6 +10,7 @@ export class Timer {
 	private intervalMs: number;
 	private elapsedMs: number;
 	private running: boolean;
+	private completed: boolean;
 	private intervalId: ReturnType<typeof setInterval> | null;
 	private startTimestamp: number | null;
 
@@ -23,6 +24,7 @@ export class Timer {
 		this.intervalMs = intervalMs;
 		this.elapsedMs = 0;
 		this.running = false;
+		this.completed = false;
 		this.intervalId = null;
 		this.startTimestamp = null;
 	}
@@ -36,6 +38,7 @@ export class Timer {
 
 		this.elapsedMs = 0;
 		this.running = true;
+		this.completed = false;
 		this.callbacks.onStart();
 
 		// Handle 0 duration: complete immediately
@@ -49,6 +52,9 @@ export class Timer {
 
 		this.startTimestamp = Date.now();
 		this.intervalId = setInterval(() => {
+			// Prevent onComplete from firing more than once
+			if (this.completed) return;
+
 			this.elapsedMs = Date.now() - this.startTimestamp!;
 			const remaining = Math.max(
 				0,
@@ -59,6 +65,7 @@ export class Timer {
 
 			if (remaining <= 0) {
 				this.running = false;
+				this.completed = true;
 				if (this.intervalId !== null) {
 					clearInterval(this.intervalId);
 					this.intervalId = null;
@@ -88,6 +95,8 @@ export class Timer {
 		this.startTimestamp = Date.now();
 
 		this.intervalId = setInterval(() => {
+			if (this.completed) return;
+
 			this.elapsedMs += Date.now() - this.startTimestamp!;
 			this.startTimestamp = Date.now();
 			const remaining = Math.max(
@@ -99,6 +108,7 @@ export class Timer {
 
 			if (remaining <= 0) {
 				this.running = false;
+				this.completed = true;
 				if (this.intervalId !== null) {
 					clearInterval(this.intervalId);
 					this.intervalId = null;
@@ -111,6 +121,7 @@ export class Timer {
 
 	stop(): void {
 		this.running = false;
+		this.completed = true;
 		if (this.intervalId !== null) {
 			clearInterval(this.intervalId);
 			this.intervalId = null;

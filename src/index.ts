@@ -57,7 +57,9 @@ function shuffleWords(count: number): string[] {
 }
 
 function wordText(word: { letters: Letter[]; isCompleted: boolean }): string {
-	return word.letters.map(l => l.char).join("") + (word.isCompleted ? "" : " ");
+	return (
+		word.letters.map((l) => l.char).join("") + (word.isCompleted ? "" : " ")
+	);
 }
 
 // ── Screen content builders ───────────────────────────────────────────────
@@ -67,11 +69,11 @@ let screenText: ReturnType<typeof Text> | null = null;
 
 function show(text: string): void {
 	if (!renderer) return;
-	// Remove existing text element
+	// Note: Text.content setter doesn't work via VNode proxy,
+	// so we must remove and recreate the element
 	if (screenText) {
-		renderer.root.remove((screenText as any).id);
+		renderer.root.remove((screenText as any).id ?? "");
 	}
-	// Create new one with desired content
 	screenText = Text({ content: text });
 	renderer.root.add(screenText);
 	renderer.requestRender();
@@ -149,15 +151,19 @@ function goGame(): void {
 	state.elapsedSeconds = 0;
 
 	if (state.timer) state.timer.stop();
-	state.timer = new Timer(timeOpt, {
-		onStart: () => {},
-		onTick: (remainingSec: number) => {
-			state.elapsedSeconds = timeOpt - remainingSec;
-			updateLiveWpm();
-			show(buildGame());
+	state.timer = new Timer(
+		timeOpt,
+		{
+			onStart: () => {},
+			onTick: (remainingSec: number) => {
+				state.elapsedSeconds = timeOpt - remainingSec;
+				updateLiveWpm();
+				show(buildGame());
+			},
+			onComplete: () => goResults(),
 		},
-		onComplete: () => goResults(),
-	}, 250);
+		250,
+	);
 
 	show(buildGame());
 }
@@ -168,12 +174,18 @@ function goResults(): void {
 		const gs = state.engine.getGameState();
 		const elapsedMin = state.elapsedSeconds / 60 || 0.01;
 		const stats = wpmCalc.calculate({
-			correctChars: gs.correctChars, totalChars: gs.totalChars,
-			errors: gs.errors, durationMinutes: elapsedMin,
+			correctChars: gs.correctChars,
+			totalChars: gs.totalChars,
+			errors: gs.errors,
+			durationMinutes: elapsedMin,
 		});
 		state.result = {
-			wpm: stats.grossWPM, rawWpm: stats.rawWPM, accuracy: stats.accuracy,
-			correctChars: gs.correctChars, totalChars: gs.totalChars, errors: gs.errors,
+			wpm: stats.grossWPM,
+			rawWpm: stats.rawWPM,
+			accuracy: stats.accuracy,
+			correctChars: gs.correctChars,
+			totalChars: gs.totalChars,
+			errors: gs.errors,
 		};
 	}
 	show(buildResults());
@@ -185,8 +197,10 @@ function updateLiveWpm(): void {
 	const elapsedMin = state.elapsedSeconds / 60;
 	if (elapsedMin <= 0) return;
 	const stats = wpmCalc.calculate({
-		correctChars: gs.correctChars, totalChars: gs.totalChars,
-		errors: gs.errors, durationMinutes: elapsedMin,
+		correctChars: gs.correctChars,
+		totalChars: gs.totalChars,
+		errors: gs.errors,
+		durationMinutes: elapsedMin,
 	});
 	state.liveWpm = stats.grossWPM;
 	state.liveRawWpm = stats.rawWPM;
@@ -201,7 +215,10 @@ function handleKey(key: any): void {
 				state.selectedTimeIndex = Math.max(0, state.selectedTimeIndex - 1);
 				show(buildMenu());
 			} else if (key.name === "down") {
-				state.selectedTimeIndex = Math.min(TIME_OPTIONS.length - 1, state.selectedTimeIndex + 1);
+				state.selectedTimeIndex = Math.min(
+					TIME_OPTIONS.length - 1,
+					state.selectedTimeIndex + 1,
+				);
 				show(buildMenu());
 			} else if (key.name === "return" || key.name === "enter") {
 				goGame();
@@ -210,9 +227,17 @@ function handleKey(key: any): void {
 
 		case "game": {
 			if (!state.engine || !state.timer) break;
-			if (key.name === "escape") { state.timer.stop(); goMenu(); return; }
+			if (key.name === "escape") {
+				state.timer.stop();
+				goMenu();
+				return;
+			}
 
-			if (!state.gameStarted && key.name !== "backspace" && key.name.length === 1) {
+			if (
+				!state.gameStarted &&
+				key.name !== "backspace" &&
+				key.name.length === 1
+			) {
 				state.gameStarted = true;
 				state.timer.start();
 			}
@@ -231,8 +256,11 @@ function handleKey(key: any): void {
 		}
 
 		case "results":
-			if (key.name === "tab") { goGame(); }
-			else if (key.name === "escape") { goMenu(); }
+			if (key.name === "tab") {
+				goGame();
+			} else if (key.name === "escape") {
+				goMenu();
+			}
 			break;
 	}
 }
@@ -240,16 +268,17 @@ function handleKey(key: any): void {
 // ── Main ──────────────────────────────────────────────────────────────────
 
 async function main(): Promise<void> {
-	renderer = await createCliRenderer({ exitOnCtrlC: true });
+	renderer = await createCliRenderer({ exitOnCtrlC: false });
 
+	// Key handler: as any needed for TS6 EventEmitter compatibility
 	(renderer.keyInput as any).on("keypress", (key: any) => handleKey(key));
-
-	goMenu();
 
 	process.on("SIGINT", () => {
 		renderer?.destroy();
 		process.exit(0);
 	});
+
+	goMenu();
 }
 
 main().catch((err) => {
