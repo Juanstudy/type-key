@@ -12,22 +12,22 @@ Construido con **Bun** + **OpenTUI** (core Zig nativo) para máxima velocidad y 
 
 ## ✨ Features
 
-| Modo | Descripción |
-|------|-------------|
-| ⏱️ **Time** | Escribí palabras contra reloj: 15s · 30s · 60s · 120s |
-| 📝 **Words** | Completá una cantidad fija de palabras: 10 · 25 · 50 · 100 |
-| 📖 **Quotes** | Escribí citas completas de una colección local |
+| Modo          | Descripción                                                |
+| ------------- | ---------------------------------------------------------- |
+| ⏱️ **Time**   | Escribí palabras contra reloj: 15s · 30s · 60s · 120s      |
+| 📝 **Words**  | Completá una cantidad fija de palabras: 10 · 25 · 50 · 100 |
+| 📖 **Quotes** | Escribí citas completas de una colección local             |
 
-| Funcionalidad | Estado |
-|---------------|--------|
-| 📊 WPM en tiempo real | ✅ |
-| 🎯 Accuracy + errores | ✅ |
-| 📈 Historial con gráfica ASCII | ✅ |
-| 💾 Resultados persistentes (SQLite) | ✅ |
-| ⚙️ Config persistente entre sesiones | ✅ |
-| ⌨️ Ctrl+Backspace borra palabra | ✅ |
-| 🔄 Tab reinicia, Esc vuelve al menú | ✅ |
-| 🌙 Offline, sin cuenta, sin tracking | ✅ |
+| Funcionalidad                        | Estado |
+| ------------------------------------ | ------ |
+| 📊 WPM en tiempo real                | ✅     |
+| 🎯 Accuracy + errores                | ✅     |
+| 📈 Historial con gráfica ASCII       | ✅     |
+| 💾 Resultados persistentes (SQLite)  | ✅     |
+| ⚙️ Config persistente entre sesiones | ✅     |
+| ⌨️ Ctrl+Backspace borra palabra      | ✅     |
+| 🔄 Tab reinicia, Esc vuelve al menú  | ✅     |
+| 🌙 Offline, sin cuenta, sin tracking | ✅     |
 
 ---
 
@@ -82,26 +82,26 @@ bun build ./src/index.ts --compile --outfile monkeyterm
 
 ### Controles
 
-| Tecla | Acción |
-|-------|--------|
-| `Backspace` | Borra última letra |
-| `Ctrl + Backspace` | Borra última palabra |
-| `Tab` | Reinicia el test |
-| `Esc` | Vuelve al menú principal |
-| `Ctrl + C` | Sale de la app |
+| Tecla              | Acción                   |
+| ------------------ | ------------------------ |
+| `Backspace`        | Borra última letra       |
+| `Ctrl + Backspace` | Borra última palabra     |
+| `Tab`              | Reinicia el test         |
+| `Esc`              | Vuelve al menú principal |
+| `Ctrl + C`         | Sale de la app           |
 
 ---
 
 ## 🧱 Stack
 
-| Capa | Tecnología |
-|------|-----------|
-| **Runtime** | [Bun](https://bun.sh) |
-| **UI** | [@opentui/core](https://opentui.com) — core Zig nativo (imperativo, sin React) |
-| **Database** | `bun:sqlite` — SQLite embebido nativo |
-| **Charts** | [asciichart](https://github.com/kroitor/asciichart) |
-| **Language** | TypeScript 6.0.3 (strict mode) |
-| **Build** | `bun build --compile` → binario standalone |
+| Capa         | Tecnología                                                                     |
+| ------------ | ------------------------------------------------------------------------------ |
+| **Runtime**  | [Bun](https://bun.sh)                                                          |
+| **UI**       | [@opentui/core](https://opentui.com) — core Zig nativo (imperativo, sin React) |
+| **Database** | `bun:sqlite` — SQLite embebido nativo                                          |
+| **Charts**   | [asciichart](https://github.com/kroitor/asciichart)                            |
+| **Language** | TypeScript 6.0.3 (strict mode)                                                 |
+| **Build**    | `bun build --compile` → binario standalone                                     |
 
 ### ¿Por qué OpenTUI Core imperativo y no React?
 
@@ -162,7 +162,7 @@ Ver [`docs/BUILD.md`](docs/BUILD.md) para instrucciones detalladas de setup.
 - [ ] **Fase 2**: Modos palabras, citas, menú, pantalla de resultados
 - [ ] **Fase 3**: Persistencia SQLite, historial con gráfica
 - [ ] **Fase 4**: CLI flags, distribución npm + binarios
-- [ ] *Post-MVP*: Temas (Dracula, Nord, Catppuccin), modo código, wordlists custom
+- [ ] _Post-MVP_: Temas (Dracula, Nord, Catppuccin), modo código, wordlists custom
 
 ---
 
@@ -172,4 +172,4 @@ MIT © 2026 [Juanstudy](https://github.com/Juanstudy). Ver [LICENSE](LICENSE).
 
 ---
 
-*Hecho con ❤️ y muchas tazas de café. Porque un desarrollador que escribe rápido es un desarrollador feliz.*
+_Hecho con ❤️ y muchas tazas de café. Porque un desarrollador que escribe rápido es un desarrollador feliz._
