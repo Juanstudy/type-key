@@ -47,7 +47,7 @@ monkeyterm
 git clone https://github.com/Juanstudy/type-key
 cd type-key
 
-# 2. Instalar dependencias (requiere Zig — ver BUILD.md)
+# 2. Instalar dependencias (requiere Zig — ver docs/BUILD.md)
 bun install
 
 # 3. Correr en desarrollo
@@ -125,8 +125,8 @@ monkeyterm/
 │   ├── data/            # Wordlists y quotes en JSON
 │   ├── types.ts         # Tipos compartidos
 │   └── index.ts         # Entry point
-├── prd.md               # Product Requirements Document
-├── BUILD.md             # Instrucciones de build local
+├── docs/PRD.md           # Product Requirements Document
+├── docs/BUILD.md         # Instrucciones de build local
 ├── package.json
 └── tsconfig.json
 ```
@@ -151,7 +151,7 @@ bun --watch src/index.ts
 - **Bun** >= 1.3
 - **Zig** >= 0.14 (para compilar @opentui/core)
 
-Ver [`BUILD.md`](BUILD.md) para instrucciones detalladas de setup.
+Ver [`docs/BUILD.md`](docs/BUILD.md) para instrucciones detalladas de setup.
 
 ---
 
