@@ -116,17 +116,30 @@ function buildMenu(): ScreenBox {
 
 	box.add(Text({ content: `Monkeyterm v${VERSION}`, fg: "#00FF00" }));
 	box.add(Text({ content: "" }));
-	box.add(Text({ content: "Select time and press Enter to start", fg: "#888888" }));
+	box.add(
+		Text({ content: "Select time and press Enter to start", fg: "#888888" }),
+	);
 	box.add(Text({ content: "" }));
 
 	for (let i = 0; i < TIME_OPTIONS.length; i++) {
 		const t = TIME_OPTIONS[i]!;
 		const sel = i === state.selectedTimeIndex;
-		box.add(Text({ content: `${sel ? "▸ " : "  "}${t}s`, fg: sel ? "#00FF00" : "#AAAAAA" }));
+		box.add(
+			Text({
+				content: `${sel ? "▸ " : "  "}${t}s`,
+				fg: sel ? "#00FF00" : "#AAAAAA",
+			}),
+		);
 	}
 
 	box.add(Text({ content: "" }));
-	box.add(Text({ content: "\u2191\u2193 Navigate  \u00b7  Enter Start  \u00b7  Ctrl+C Quit", fg: "#666666" }));
+	box.add(
+		Text({
+			content:
+				"\u2191\u2193 Navigate  \u00b7  Enter Start  \u00b7  Ctrl+C Quit",
+			fg: "#666666",
+		}),
+	);
 
 	return box;
 }
@@ -138,7 +151,12 @@ function buildGame(): ScreenBox {
 	const gs: GameState = state.engine.getGameState();
 	const remaining = Math.ceil(state.timer.getRemainingSeconds());
 
-	box.add(Text({ content: `\u23F1 ${remaining}s    WPM: ${state.liveWpm}  RAW: ${state.liveRawWpm}`, fg: "#FFAA00" }));
+	box.add(
+		Text({
+			content: `\u23F1 ${remaining}s    WPM: ${state.liveWpm}  RAW: ${state.liveRawWpm}`,
+			fg: "#FFAA00",
+		}),
+	);
 	box.add(Text({ content: "" }));
 
 	const words = gs.words;
@@ -164,17 +182,33 @@ function buildResults(): ScreenBox {
 	if (!state.result) return box;
 
 	const r = state.result;
-	const accColor = r.accuracy >= 90 ? "#00FF00" : r.accuracy >= 75 ? "#FFAA00" : "#FF3333";
+	const accColor =
+		r.accuracy >= 90 ? "#00FF00" : r.accuracy >= 75 ? "#FFAA00" : "#FF3333";
 
 	box.add(Text({ content: "\u2014 Results \u2014", fg: "#00FF00" }));
 	box.add(Text({ content: "" }));
 	box.add(Text({ content: `WPM:        ${r.wpm}`, fg: "#FFFFFF" }));
 	box.add(Text({ content: `Raw WPM:    ${r.rawWpm}`, fg: "#AAAAAA" }));
 	box.add(Text({ content: `Accuracy:   ${r.accuracy}%`, fg: accColor }));
-	box.add(Text({ content: `Chars:      ${r.correctChars} / ${r.totalChars}`, fg: "#AAAAAA" }));
-	box.add(Text({ content: `Errors:     ${r.errors}`, fg: r.errors > 0 ? "#FF3333" : "#00FF00" }));
+	box.add(
+		Text({
+			content: `Chars:      ${r.correctChars} / ${r.totalChars}`,
+			fg: "#AAAAAA",
+		}),
+	);
+	box.add(
+		Text({
+			content: `Errors:     ${r.errors}`,
+			fg: r.errors > 0 ? "#FF3333" : "#00FF00",
+		}),
+	);
 	box.add(Text({ content: "" }));
-	box.add(Text({ content: "Tab: Restart  \u00b7  Esc: Menu  \u00b7  Ctrl+C: Quit", fg: "#666666" }));
+	box.add(
+		Text({
+			content: "Tab: Restart  \u00b7  Esc: Menu  \u00b7  Ctrl+C: Quit",
+			fg: "#666666",
+		}),
+	);
 
 	return box;
 }
@@ -206,17 +240,21 @@ function goGame(): void {
 	state.liveRawWpm = 0;
 	state.elapsedSeconds = 0;
 
-	state.timer = new Timer(timeOpt, {
-		onStart: () => {},
-		onTick: (remainingSec: number) => {
-			state.elapsedSeconds = timeOpt - remainingSec;
-			updateLiveWpm();
-			switchScreen(buildGame());
+	state.timer = new Timer(
+		timeOpt,
+		{
+			onStart: () => {},
+			onTick: (remainingSec: number) => {
+				state.elapsedSeconds = timeOpt - remainingSec;
+				updateLiveWpm();
+				switchScreen(buildGame());
+			},
+			onComplete: () => {
+				goResults();
+			},
 		},
-		onComplete: () => {
-			goResults();
-		},
-	}, 250);
+		250,
+	);
 
 	switchScreen(buildGame());
 }
@@ -271,7 +309,10 @@ function handleKey(key: any): void {
 				state.selectedTimeIndex = Math.max(0, state.selectedTimeIndex - 1);
 				switchScreen(buildMenu());
 			} else if (key.name === "down") {
-				state.selectedTimeIndex = Math.min(TIME_OPTIONS.length - 1, state.selectedTimeIndex + 1);
+				state.selectedTimeIndex = Math.min(
+					TIME_OPTIONS.length - 1,
+					state.selectedTimeIndex + 1,
+				);
 				switchScreen(buildMenu());
 			} else if (key.name === "return" || key.name === "enter") {
 				goGame();
@@ -287,7 +328,11 @@ function handleKey(key: any): void {
 				return;
 			}
 
-			if (!state.gameStarted && key.name !== "backspace" && key.name.length === 1) {
+			if (
+				!state.gameStarted &&
+				key.name !== "backspace" &&
+				key.name.length === 1
+			) {
 				state.gameStarted = true;
 				state.timer.start();
 			}

@@ -12,20 +12,18 @@ Construido con **Bun** + **OpenTUI** (core Zig nativo) para máxima velocidad y 
 
 ## ✨ Features
 
-| Modo          | Descripción                                                |
-| ------------- | ---------------------------------------------------------- |
-| ⏱️ **Time**   | Escribí palabras contra reloj: 15s · 30s · 60s · 120s      |
-| 📝 **Words**  | Completá una cantidad fija de palabras: 10 · 25 · 50 · 100 |
-| 📖 **Quotes** | Escribí citas completas de una colección local             |
+| Modo          | Descripción                                                | Estado |
+| ------------- | ---------------------------------------------------------- | ------ |
+| ⏱️ **Time**   | Escribí palabras contra reloj: 15s · 30s · 60s · 120s      | ✅ MVP |
+| 📝 **Words**  | Completá una cantidad fija de palabras: 10 · 25 · 50 · 100 | 🔜     |
+| 📖 **Quotes** | Escribí citas completas de una colección local             | 🔜     |
 
 | Funcionalidad                        | Estado |
 | ------------------------------------ | ------ |
+| 🎮 Menú + navegación por flechas     | ✅     |
 | 📊 WPM en tiempo real                | ✅     |
 | 🎯 Accuracy + errores                | ✅     |
-| 📈 Historial con gráfica ASCII       | ✅     |
-| 💾 Resultados persistentes (SQLite)  | ✅     |
-| ⚙️ Config persistente entre sesiones | ✅     |
-| ⌨️ Ctrl+Backspace borra palabra      | ✅     |
+| ⌨️ Backspace borra última letra       | ✅     |
 | 🔄 Tab reinicia, Esc vuelve al menú  | ✅     |
 | 🌙 Offline, sin cuenta, sin tracking | ✅     |
 
@@ -66,26 +64,23 @@ bun build ./src/index.ts --compile --outfile monkeyterm
                     ┌─────────────────────────────────────┐
                     │           monkeyterm                │
                     │                                     │
-                    │  modo:    [tiempo] palabras  citas  │
-                    │  tiempo:  15  [30]  60  120         │
+                    │  tiempo:  {15}  [30s]  60  120      │
                     │                                     │
-                    │  idioma:  [english]  spanish        │
-                    │                                     │
-                    │  [enter] comenzar  [h] historial    │
+                    │  [↑↓] navegar  [enter] comenzar     │
                     └─────────────────────────────────────┘
 ```
 
-1. **Menú principal** — navegás con flechas o teclas, elegís modo y config.
-2. **Juego** — el timer arranca cuando apretás la primera tecla. WPM en vivo, barra de progreso.
-3. **Resultados** — WPM, accuracy, caracteres, errores, comparación vs tu promedio.
-4. **Historial** — gráfica de las últimas 20 sesiones, mejor WPM, promedio, total.
+1. **Menú principal** — navegás con ↑↓, seleccionás tiempo y Enter para empezar.
+2. **Juego** — el timer arranca con la primera tecla. WPM en vivo, letras coloreadas por estado.
+3. **Resultados** — WPM, accuracy, caracteres, errores. Tab para reiniciar, Esc para menú.
 
 ### Controles
 
 | Tecla              | Acción                   |
 | ------------------ | ------------------------ |
 | `Backspace`        | Borra última letra       |
-| `Ctrl + Backspace` | Borra última palabra     |
+| `↑ ↓`             | Navegar opciones (menú)  |
+| `Enter`            | Empezar test             |
 | `Tab`              | Reinicia el test         |
 | `Esc`              | Vuelve al menú principal |
 | `Ctrl + C`         | Sale de la app           |
@@ -118,15 +113,21 @@ OpenTUI ofrece dos caminos: el Core imperativo (`@opentui/core`) y el reconciler
 ```
 monkeyterm/
 ├── src/
-│   ├── screens/         # Pantallas (menu, game, results, history)
 │   ├── engine/          # Lógica central (typing engine, timer, wpm)
-│   ├── lib/             # Utilidades (wordlists, quotes, stats, db, config)
-│   ├── ui/              # Componentes de UI (word-display, cursor, progress-bar, etc.)
-│   ├── data/            # Wordlists y quotes en JSON
-│   ├── types.ts         # Tipos compartidos
-│   └── index.ts         # Entry point
-├── docs/PRD.md           # Product Requirements Document
-├── docs/BUILD.md         # Instrucciones de build local
+│   │   ├── typing.ts    # Motor de tipeo con estados de letra
+│   │   ├── timer.ts     # Timer con callbacks
+│   │   ├── wpm.ts       # Cálculo de WPM y accuracy
+│   │   └── *.test.ts    # Tests unitarios (strict TDD)
+│   ├── lib/
+│   │   └── types.ts     # Tipos compartidos (Letter, GameConfig, etc.)
+│   ├── data/
+│   │   └── wordlists/   # Wordlists en JSON
+│   └── index.ts         # Entry point + screens (menu, game, results)
+├── docs/
+│   ├── PRD.md           # Product Requirements Document
+│   ├── BUILD.md         # Instrucciones de build local
+│   └── AGENTS.md        # Reglas de code review (GGA)
+├── openspec/            # Artefactos SDD
 ├── package.json
 └── tsconfig.json
 ```
@@ -158,8 +159,8 @@ Ver [`docs/BUILD.md`](docs/BUILD.md) para instrucciones detalladas de setup.
 ## 🗺️ Roadmap
 
 - [x] PRD + setup del proyecto
-- [ ] **Fase 1**: Core del juego (typing engine, timer, modo tiempo funcional)
-- [ ] **Fase 2**: Modos palabras, citas, menú, pantalla de resultados
+- [x] **Fase 1**: Core del juego (typing engine, timer, modo tiempo funcional)
+- [ ] **Fase 2**: Modos palabras, citas
 - [ ] **Fase 3**: Persistencia SQLite, historial con gráfica
 - [ ] **Fase 4**: CLI flags, distribución npm + binarios
 - [ ] _Post-MVP_: Temas (Dracula, Nord, Catppuccin), modo código, wordlists custom
