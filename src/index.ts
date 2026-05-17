@@ -1,4 +1,4 @@
-import { createCliRenderer, Text, fg, StyledText, stringToStyledText } from "@opentui/core";
+import { createCliRenderer, Text, fg, StyledText } from "@opentui/core";
 import type { CliRenderer } from "@opentui/core";
 import type { TextChunk } from "@opentui/core";
 import type { ScreenName, TimeOption } from "./lib/types";
@@ -69,18 +69,26 @@ const C_TITLE = "#00FF00";
 const C_HIGHLIGHT = "#FFFFFF";
 const C_NORMAL = "#AAAAAA";
 const C_ACCENT = "#FFAA00";
-const C_BLUE = "#00AAFF";
 
+// Newline as a no-color TextChunk (newline chars are invisible anyway)
 function nl(): TextChunk[] {
-	return [stringToStyledText("\n") as any];
+	return [fg(C_NORMAL)("\n")];
+}
+
+function sp(): TextChunk[] {
+	return [fg(C_NORMAL)(" ")];
 }
 
 function letterChunks(letter: Letter): TextChunk[] {
 	switch (letter.state) {
-		case "correct": return [fg(C_CORRECT)(letter.char)];
-		case "incorrect": return [fg(C_INCORRECT)(letter.char)];
-		case "extra": return [fg(C_EXTRA)(letter.char)];
-		default: return [fg(C_NORMAL)(letter.char)];
+		case "correct":
+			return [fg(C_CORRECT)(letter.char)];
+		case "incorrect":
+			return [fg(C_INCORRECT)(letter.char)];
+		case "extra":
+			return [fg(C_EXTRA)(letter.char)];
+		default:
+			return [fg(C_NORMAL)(letter.char)];
 	}
 }
 
@@ -89,7 +97,7 @@ function wordChunks(word: Word): TextChunk[] {
 	for (const l of word.letters) {
 		chunks.push(...letterChunks(l));
 	}
-	if (!word.isCompleted) chunks.push(stringToStyledText(" ") as any);
+	if (!word.isCompleted) chunks.push(...sp());
 	return chunks;
 }
 
@@ -123,7 +131,11 @@ function buildMenuContent(): TextChunk[] {
 	}
 
 	c.push(...nl());
-	c.push(fg(C_DIM)("\u2191\u2193 Navigate  \u00b7  Enter Start  \u00b7  Ctrl+C Quit"));
+	c.push(
+		fg(C_DIM)(
+			"\u2191\u2193 Navigate  \u00b7  Enter Start  \u00b7  Ctrl+C Quit",
+		),
+	);
 
 	return c;
 }
@@ -135,7 +147,11 @@ function buildGameContent(): TextChunk[] {
 	const gs: GameState = state.engine.getGameState();
 	const remaining = Math.ceil(state.timer.getRemainingSeconds());
 
-	c.push(fg(C_ACCENT)(`\u23F1 ${remaining}s    WPM: ${state.liveWpm}  RAW: ${state.liveRawWpm}`));
+	c.push(
+		fg(C_ACCENT)(
+			`\u23F1 ${remaining}s    WPM: ${state.liveWpm}  RAW: ${state.liveRawWpm}`,
+		),
+	);
 	c.push(...nl());
 	c.push(...nl());
 
@@ -151,7 +167,9 @@ function buildGameContent(): TextChunk[] {
 			c.push(...wordChunks(w));
 		} else {
 			// Other words: dim
-			const text = w.letters.map((l: Letter) => l.char).join("") + (w.isCompleted ? "" : " ");
+			const text =
+				w.letters.map((l: Letter) => l.char).join("") +
+				(w.isCompleted ? "" : " ");
 			c.push(fg(C_DIM)(text));
 		}
 		c.push(...nl());
@@ -168,7 +186,8 @@ function buildResultsContent(): TextChunk[] {
 	if (!state.result) return c;
 
 	const r = state.result;
-	const accColor = r.accuracy >= 90 ? C_CORRECT : r.accuracy >= 75 ? C_ACCENT : C_INCORRECT;
+	const accColor =
+		r.accuracy >= 90 ? C_CORRECT : r.accuracy >= 75 ? C_ACCENT : C_INCORRECT;
 
 	c.push(fg(C_TITLE)("\u2014 Results \u2014"));
 	c.push(...nl());
@@ -286,7 +305,10 @@ function handleKey(key: any): void {
 				state.selectedTimeIndex = Math.max(0, state.selectedTimeIndex - 1);
 				setContent(buildMenuContent());
 			} else if (key.name === "down") {
-				state.selectedTimeIndex = Math.min(TIME_OPTIONS.length - 1, state.selectedTimeIndex + 1);
+				state.selectedTimeIndex = Math.min(
+					TIME_OPTIONS.length - 1,
+					state.selectedTimeIndex + 1,
+				);
 				setContent(buildMenuContent());
 			} else if (key.name === "return" || key.name === "enter") {
 				goGame();
@@ -302,7 +324,11 @@ function handleKey(key: any): void {
 				return;
 			}
 
-			if (!state.gameStarted && key.name !== "backspace" && key.name.length === 1) {
+			if (
+				!state.gameStarted &&
+				key.name !== "backspace" &&
+				key.name.length === 1
+			) {
 				state.gameStarted = true;
 				state.timer.start();
 			}
