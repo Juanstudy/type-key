@@ -1,0 +1,40 @@
+{
+  "compilerOptions": {
+    // Type Checking
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": false,
+    "exactOptionalPropertyTypes": false,
+
+    // Types
+    "types": ["@types/bun"],
+
+    // Module Resolution
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "target": "esnext",
+    "lib": ["esnext"],
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "erasableSyntaxOnly": true,
+
+    // Output
+    "noEmit": true,
+
+    // Interop
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+
+    // Paths
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+    "ignoreDeprecations": "6.0"
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules"]
+}

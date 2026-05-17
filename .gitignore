@@ -1,0 +1,21 @@
+# Bun
+node_modules/
+*.lockb
+
+# Build output
+monkeyterm
+dist/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Config local
+.atl/
+.pi-lens/
+.env
+.env.local
