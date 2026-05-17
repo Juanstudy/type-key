@@ -1,5 +1,6 @@
-import { createCliRenderer, Text, Box } from "@opentui/core";
+import { createCliRenderer, Text, fg, StyledText, stringToStyledText } from "@opentui/core";
 import type { CliRenderer } from "@opentui/core";
+import type { TextChunk } from "@opentui/core";
 import type { ScreenName, TimeOption } from "./lib/types";
 import { TypingEngine } from "./engine/typing";
 import type { GameState } from "./engine/typing";
@@ -22,8 +23,6 @@ interface SessionResult {
 	totalChars: number;
 	errors: number;
 }
-
-type ScreenBox = ReturnType<typeof Box>;
 
 const state: {
 	screen: ScreenName;
@@ -60,105 +59,85 @@ function shuffleWords(count: number): string[] {
 	return a.slice(0, count);
 }
 
-// ── Letter coloring ───────────────────────────────────────────────────────
+// ── Styled text helpers ───────────────────────────────────────────────────
 
-function letterStr(letter: Letter): string {
+const C_CORRECT = "#00FF00";
+const C_INCORRECT = "#FF3333";
+const C_EXTRA = "#FFDD00";
+const C_DIM = "#666666";
+const C_TITLE = "#00FF00";
+const C_HIGHLIGHT = "#FFFFFF";
+const C_NORMAL = "#AAAAAA";
+const C_ACCENT = "#FFAA00";
+const C_BLUE = "#00AAFF";
+
+function nl(): TextChunk[] {
+	return [stringToStyledText("\n") as any];
+}
+
+function letterChunks(letter: Letter): TextChunk[] {
 	switch (letter.state) {
-		case "correct":
-			return `{green-fg}${letter.char}{/}`;
-		case "incorrect":
-			return `{red-fg}${letter.char}{/}`;
-		case "extra":
-			return `{yellow-fg}${letter.char}{/}`;
-		default:
-			return `{white-fg}${letter.char}{/}`;
+		case "correct": return [fg(C_CORRECT)(letter.char)];
+		case "incorrect": return [fg(C_INCORRECT)(letter.char)];
+		case "extra": return [fg(C_EXTRA)(letter.char)];
+		default: return [fg(C_NORMAL)(letter.char)];
 	}
 }
 
-function wordStr(word: Word): string {
-	let s = "";
-	for (const letter of word.letters) {
-		s += letterStr(letter);
+function wordChunks(word: Word): TextChunk[] {
+	const chunks: TextChunk[] = [];
+	for (const l of word.letters) {
+		chunks.push(...letterChunks(l));
 	}
-	if (!word.isCompleted) {
-		s += " ";
-	}
-	return s;
+	if (!word.isCompleted) chunks.push(stringToStyledText(" ") as any);
+	return chunks;
 }
 
-// ── Screen factories ──────────────────────────────────────────────────────
+// ── Screen content builders ───────────────────────────────────────────────
 
 let renderer: CliRenderer | null = null;
+let screenText: ReturnType<typeof Text> | null = null;
 
-function createBox(): ScreenBox {
-	return Box({
-		width: "100%" as const,
-		height: "100%" as const,
-		flexDirection: "column" as const,
-		alignItems: "center" as const,
-		justifyContent: "center" as const,
-	});
+function setContent(chunks: TextChunk[]): void {
+	if (!screenText) return;
+	screenText.content = new StyledText(chunks);
+	renderer?.requestRender();
 }
 
-function switchScreen(box: ScreenBox): void {
-	if (!renderer) return;
-	// Remove all existing children from root before adding new one
-	const existing = renderer.root.getChildren();
-	for (let i = existing.length - 1; i >= 0; i--) {
-		const child = existing[i];
-		if (child) renderer.root.remove((child as any).id ?? (child as any)._id);
-	}
-	renderer.root.add(box);
-	renderer.requestRender();
-}
+function buildMenuContent(): TextChunk[] {
+	const c: TextChunk[] = [];
 
-function buildMenu(): ScreenBox {
-	const box = createBox();
-
-	box.add(Text({ content: `Monkeyterm v${VERSION}`, fg: "#00FF00" }));
-	box.add(Text({ content: "" }));
-	box.add(
-		Text({ content: "Select time and press Enter to start", fg: "#888888" }),
-	);
-	box.add(Text({ content: "" }));
+	c.push(fg(C_TITLE)(`Monkeyterm v${VERSION}`));
+	c.push(...nl());
+	c.push(...nl());
+	c.push(fg(C_DIM)("Select time and press Enter to start"));
+	c.push(...nl());
+	c.push(...nl());
 
 	for (let i = 0; i < TIME_OPTIONS.length; i++) {
 		const t = TIME_OPTIONS[i]!;
 		const sel = i === state.selectedTimeIndex;
-		box.add(
-			Text({
-				content: `${sel ? "▸ " : "  "}${t}s`,
-				fg: sel ? "#00FF00" : "#AAAAAA",
-			}),
-		);
+		const prefix = sel ? "▸ " : "  ";
+		c.push(fg(sel ? C_TITLE : C_NORMAL)(`${prefix}${t}s`));
+		c.push(...nl());
 	}
 
-	box.add(Text({ content: "" }));
-	box.add(
-		Text({
-			content:
-				"\u2191\u2193 Navigate  \u00b7  Enter Start  \u00b7  Ctrl+C Quit",
-			fg: "#666666",
-		}),
-	);
+	c.push(...nl());
+	c.push(fg(C_DIM)("\u2191\u2193 Navigate  \u00b7  Enter Start  \u00b7  Ctrl+C Quit"));
 
-	return box;
+	return c;
 }
 
-function buildGame(): ScreenBox {
-	const box = createBox();
-	if (!state.engine || !state.timer) return box;
+function buildGameContent(): TextChunk[] {
+	const c: TextChunk[] = [];
+	if (!state.engine || !state.timer) return c;
 
 	const gs: GameState = state.engine.getGameState();
 	const remaining = Math.ceil(state.timer.getRemainingSeconds());
 
-	box.add(
-		Text({
-			content: `\u23F1 ${remaining}s    WPM: ${state.liveWpm}  RAW: ${state.liveRawWpm}`,
-			fg: "#FFAA00",
-		}),
-	);
-	box.add(Text({ content: "" }));
+	c.push(fg(C_ACCENT)(`\u23F1 ${remaining}s    WPM: ${state.liveWpm}  RAW: ${state.liveRawWpm}`));
+	c.push(...nl());
+	c.push(...nl());
 
 	const words = gs.words;
 	const curIdx = gs.currentWordIndex;
@@ -167,51 +146,47 @@ function buildGame(): ScreenBox {
 
 	for (let i = start; i < end; i++) {
 		const w = words[i]!;
-		const isCurrent = i === curIdx;
-		const line = wordStr(w);
-		box.add(Text({ content: line, fg: isCurrent ? "#FFFFFF" : "#666666" }));
+		if (i === curIdx) {
+			// Current word: colored letters
+			c.push(...wordChunks(w));
+		} else {
+			// Other words: dim
+			const text = w.letters.map((l: Letter) => l.char).join("") + (w.isCompleted ? "" : " ");
+			c.push(fg(C_DIM)(text));
+		}
+		c.push(...nl());
 	}
 
-	box.add(Text({ content: "" }));
-	box.add(Text({ content: "Esc: Menu  \u00b7  Ctrl+C: Quit", fg: "#666666" }));
+	c.push(...nl());
+	c.push(fg(C_DIM)("Esc: Menu  \u00b7  Ctrl+C: Quit"));
 
-	return box;
+	return c;
 }
 
-function buildResults(): ScreenBox {
-	const box = createBox();
-	if (!state.result) return box;
+function buildResultsContent(): TextChunk[] {
+	const c: TextChunk[] = [];
+	if (!state.result) return c;
 
 	const r = state.result;
-	const accColor =
-		r.accuracy >= 90 ? "#00FF00" : r.accuracy >= 75 ? "#FFAA00" : "#FF3333";
+	const accColor = r.accuracy >= 90 ? C_CORRECT : r.accuracy >= 75 ? C_ACCENT : C_INCORRECT;
 
-	box.add(Text({ content: "\u2014 Results \u2014", fg: "#00FF00" }));
-	box.add(Text({ content: "" }));
-	box.add(Text({ content: `WPM:        ${r.wpm}`, fg: "#FFFFFF" }));
-	box.add(Text({ content: `Raw WPM:    ${r.rawWpm}`, fg: "#AAAAAA" }));
-	box.add(Text({ content: `Accuracy:   ${r.accuracy}%`, fg: accColor }));
-	box.add(
-		Text({
-			content: `Chars:      ${r.correctChars} / ${r.totalChars}`,
-			fg: "#AAAAAA",
-		}),
-	);
-	box.add(
-		Text({
-			content: `Errors:     ${r.errors}`,
-			fg: r.errors > 0 ? "#FF3333" : "#00FF00",
-		}),
-	);
-	box.add(Text({ content: "" }));
-	box.add(
-		Text({
-			content: "Tab: Restart  \u00b7  Esc: Menu  \u00b7  Ctrl+C: Quit",
-			fg: "#666666",
-		}),
-	);
+	c.push(fg(C_TITLE)("\u2014 Results \u2014"));
+	c.push(...nl());
+	c.push(...nl());
+	c.push(fg(C_HIGHLIGHT)(`WPM:        ${r.wpm}`));
+	c.push(...nl());
+	c.push(fg(C_NORMAL)(`Raw WPM:    ${r.rawWpm}`));
+	c.push(...nl());
+	c.push(fg(accColor)(`Accuracy:   ${r.accuracy}%`));
+	c.push(...nl());
+	c.push(fg(C_NORMAL)(`Chars:      ${r.correctChars} / ${r.totalChars}`));
+	c.push(...nl());
+	c.push(fg(r.errors > 0 ? C_INCORRECT : C_CORRECT)(`Errors:     ${r.errors}`));
+	c.push(...nl());
+	c.push(...nl());
+	c.push(fg(C_DIM)("Tab: Restart  \u00b7  Esc: Menu  \u00b7  Ctrl+C: Quit"));
 
-	return box;
+	return c;
 }
 
 // ── Screen transitions ────────────────────────────────────────────────────
@@ -225,7 +200,7 @@ function goMenu(): void {
 	state.liveWpm = 0;
 	state.liveRawWpm = 0;
 	state.elapsedSeconds = 0;
-	switchScreen(buildMenu());
+	setContent(buildMenuContent());
 }
 
 function goGame(): void {
@@ -241,6 +216,7 @@ function goGame(): void {
 	state.liveRawWpm = 0;
 	state.elapsedSeconds = 0;
 
+	if (state.timer) state.timer.stop();
 	state.timer = new Timer(
 		timeOpt,
 		{
@@ -248,7 +224,7 @@ function goGame(): void {
 			onTick: (remainingSec: number) => {
 				state.elapsedSeconds = timeOpt - remainingSec;
 				updateLiveWpm();
-				switchScreen(buildGame());
+				setContent(buildGameContent());
 			},
 			onComplete: () => {
 				goResults();
@@ -257,7 +233,7 @@ function goGame(): void {
 		250,
 	);
 
-	switchScreen(buildGame());
+	setContent(buildGameContent());
 }
 
 function goResults(): void {
@@ -283,7 +259,7 @@ function goResults(): void {
 		};
 	}
 
-	switchScreen(buildResults());
+	setContent(buildResultsContent());
 }
 
 function updateLiveWpm(): void {
@@ -308,13 +284,10 @@ function handleKey(key: any): void {
 		case "menu":
 			if (key.name === "up") {
 				state.selectedTimeIndex = Math.max(0, state.selectedTimeIndex - 1);
-				switchScreen(buildMenu());
+				setContent(buildMenuContent());
 			} else if (key.name === "down") {
-				state.selectedTimeIndex = Math.min(
-					TIME_OPTIONS.length - 1,
-					state.selectedTimeIndex + 1,
-				);
-				switchScreen(buildMenu());
+				state.selectedTimeIndex = Math.min(TIME_OPTIONS.length - 1, state.selectedTimeIndex + 1);
+				setContent(buildMenuContent());
 			} else if (key.name === "return" || key.name === "enter") {
 				goGame();
 			}
@@ -329,24 +302,20 @@ function handleKey(key: any): void {
 				return;
 			}
 
-			if (
-				!state.gameStarted &&
-				key.name !== "backspace" &&
-				key.name.length === 1
-			) {
+			if (!state.gameStarted && key.name !== "backspace" && key.name.length === 1) {
 				state.gameStarted = true;
 				state.timer.start();
 			}
 
 			if (key.name === "backspace") {
 				state.engine.backspace();
-				switchScreen(buildGame());
+				setContent(buildGameContent());
 			} else if (key.name === "space") {
 				state.engine.type(" ");
-				switchScreen(buildGame());
+				setContent(buildGameContent());
 			} else if (key.name && key.name.length === 1) {
 				state.engine.type(key.name);
-				switchScreen(buildGame());
+				setContent(buildGameContent());
 			}
 			break;
 		}
@@ -368,7 +337,14 @@ async function main(): Promise<void> {
 		exitOnCtrlC: true,
 	});
 
-	// Workaround: key handler type issues with TS 6.x EventEmitter
+	// Create ONE persistent Text element — never remove/replace
+	screenText = Text({
+		content: "",
+		fg: "#FFFFFF",
+	});
+	renderer.root.add(screenText);
+
+	// Key handler
 	(renderer.keyInput as any).on("keypress", (key: any) => handleKey(key));
 
 	goMenu();
