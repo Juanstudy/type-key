@@ -1,0 +1,53 @@
+strict_tdd: true
+context: |
+  type-key (Monkeyterm) is a terminal typing test powered by Bun + TypeScript + OpenTUI.
+  Runtime: Bun (package manager: bun)
+  Language: TypeScript (ESM module)
+  UI Library: OpenTUI (@opentui/core)
+  Analytics: asciichart
+  Primary test command: bun run test
+  Unit tests: package script (bun run test)
+  Integration tests: none
+  E2E tests: none
+rules:
+  proposal:
+    require_problem_statement: true
+  spec:
+    require_acceptance_criteria: true
+  design:
+    require_tradeoffs: true
+  tasks:
+    protect_review_workload: true
+  apply:
+    test_command: "bun run test"
+  verify:
+    test_command: "bun run test"
+testing:
+  detected: "2026-05-17"
+  runner:
+    command: "bun run test"
+    framework: "package script"
+  layers:
+    unit: "package script"
+    integration: ""
+    e2e: ""
+  commands:
+    unit:
+      - scope: "."
+        command: "bun run test"
+        framework: "package script"
+    integration: []
+    e2e: []
+  coverage:
+    command: ""
+    commands: []
+quality:
+  lint: ""
+  lint_commands: []
+  typecheck: "bun run typecheck"
+  typecheck_commands:
+    - scope: "."
+      command: "bun run typecheck"
+      framework: "type checker"
+  format: ""
+  format_commands: []

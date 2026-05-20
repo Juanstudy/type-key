@@ -1,4 +1,5 @@
 /** Estado de cada letra individual */
+/** Possible states for each typed character */
 export type LetterState = "untyped" | "correct" | "incorrect" | "extra";
 
 export interface Letter {
@@ -13,7 +14,6 @@ export interface Word {
 }
 
 export type GameMode = "time" | "words" | "quote";
-
 export type TimeOption = 15 | 30 | 60 | 120;
 export type WordCountOption = 10 | 25 | 50 | 100;
 export type Language = "english" | "spanish";
