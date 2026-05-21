@@ -20,10 +20,13 @@ interface KeyEvent {
 }
 
 const TIME_OPTIONS: TimeOption[] = [15, 30, 60, 120];
+const WORD_COUNT_OPTIONS = [10, 25, 50, 100] as const;
 
 const state: {
 	screen: ScreenName;
+	mode: "time" | "words";
 	selectedTimeIndex: number;
+	selectedWordCountIndex: number;
 	engine: TypingEngine | null;
 	timer: Timer | null;
 	words: string[];
@@ -34,7 +37,9 @@ const state: {
 	elapsedSeconds: number;
 } = {
 	screen: "menu",
+	mode: "time",
 	selectedTimeIndex: 1,
+	selectedWordCountIndex: 1,
 	engine: null,
 	timer: null,
 	words: [],
@@ -65,13 +70,27 @@ function show(content: import("@opentui/core").StyledText | string): void {
 function addTitleFont(): void {
 	if (!renderer) return;
 	renderer.root.remove(TITLE_FONT_ID);
-	renderer.root.add(ASCIIFont({ text: "Monkeyterm", font: "slick", id: TITLE_FONT_ID }));
+	renderer.root.add(
+		ASCIIFont({ text: "Monkeyterm", font: "slick", id: TITLE_FONT_ID }),
+	);
 	renderer.requestRender();
 }
 
 function removeTitleFont(): void {
 	if (!renderer) return;
 	renderer.root.remove(TITLE_FONT_ID);
+}
+
+function getMenuOptions(): number[] {
+	return state.mode === "time"
+		? [...TIME_OPTIONS]
+		: [...WORD_COUNT_OPTIONS];
+}
+
+function getMenuSelectedIndex(): number {
+	return state.mode === "time"
+		? state.selectedTimeIndex
+		: state.selectedWordCountIndex;
 }
 
 function goMenu(): void {
@@ -85,13 +104,21 @@ function goMenu(): void {
 	state.elapsedSeconds = 0;
 	removeTitleFont();
 	addTitleFont();
-	show(buildMenu(state.selectedTimeIndex, TIME_OPTIONS));
+	show(buildMenu(state.mode, getMenuSelectedIndex(), getMenuOptions()));
+}
+
+function checkGameComplete(): void {
+	if (state.engine?.isComplete()) {
+		state.timer?.stop();
+		goResults();
+	}
 }
 
 function goGame(): void {
+	const wordCount = WORD_COUNT_OPTIONS[state.selectedWordCountIndex] ?? 50;
 	const timeOpt = TIME_OPTIONS[state.selectedTimeIndex] ?? 30;
 	state.screen = "game";
-	state.engine = new TypingEngine(shuffleWords(50)); // 50 words fixed for timed mode (WordCountOption for future)
+	state.engine = new TypingEngine(shuffleWords(wordCount));
 	state.result = null;
 	state.gameStarted = false;
 	state.liveWpm = 0;
@@ -108,8 +135,14 @@ function goGame(): void {
 				state.elapsedSeconds = timeOpt - remainingSec;
 				updateLiveWpm();
 				showGame();
+				// In words mode, check completion on every tick
+				if (state.mode === "words") checkGameComplete();
 			},
-			onComplete: () => goResults(),
+			onComplete: () => {
+				// Time mode: timer reaching 0 ends the game
+				// Words mode: timer is for stats only, completion checked elsewhere
+				if (state.mode === "time") goResults();
+			},
 		},
 		250,
 	);
@@ -188,15 +221,29 @@ function handleKey(key: KeyEvent): void {
 
 	switch (state.screen) {
 		case "menu":
-			if (key.name === "up") {
-				state.selectedTimeIndex = Math.max(0, state.selectedTimeIndex - 1);
-				show(buildMenu(state.selectedTimeIndex, TIME_OPTIONS));
+			if (key.name === "left" || key.name === "right") {
+				state.mode = state.mode === "time" ? "words" : "time";
+				show(buildMenu(state.mode, getMenuSelectedIndex(), getMenuOptions()));
+			} else if (key.name === "up") {
+				if (state.mode === "time") {
+					state.selectedTimeIndex = Math.max(0, state.selectedTimeIndex - 1);
+				} else {
+					state.selectedWordCountIndex = Math.max(0, state.selectedWordCountIndex - 1);
+				}
+				show(buildMenu(state.mode, getMenuSelectedIndex(), getMenuOptions()));
 			} else if (key.name === "down") {
-				state.selectedTimeIndex = Math.min(
-					TIME_OPTIONS.length - 1,
-					state.selectedTimeIndex + 1,
-				);
-				show(buildMenu(state.selectedTimeIndex, TIME_OPTIONS));
+				if (state.mode === "time") {
+					state.selectedTimeIndex = Math.min(
+						TIME_OPTIONS.length - 1,
+						state.selectedTimeIndex + 1,
+					);
+				} else {
+					state.selectedWordCountIndex = Math.min(
+						WORD_COUNT_OPTIONS.length - 1,
+						state.selectedWordCountIndex + 1,
+					);
+				}
+				show(buildMenu(state.mode, getMenuSelectedIndex(), getMenuOptions()));
 			} else if (key.name === "return" || key.name === "enter") {
 				goGame();
 			}
@@ -223,12 +270,15 @@ function handleKey(key: KeyEvent): void {
 			if (key.name === "backspace") {
 				state.engine.backspace();
 				showGame();
+				if (state.mode === "words") checkGameComplete();
 			} else if (key.name === "space") {
 				state.engine.type(" ");
 				showGame();
+				if (state.mode === "words") checkGameComplete();
 			} else if (key.name && key.name.length === 1) {
 				state.engine.type(key.name);
 				showGame();
+				if (state.mode === "words") checkGameComplete();
 			}
 			break;
 		}

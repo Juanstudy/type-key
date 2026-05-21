@@ -68,31 +68,37 @@ export function shuffleWords(count: number): string[] {
 
 export const VERSION = "1.0.0";
 
+const MODE_LABELS = { time: "Time", words: "Words" } as const;
+
 export function buildMenu(
-	selectedTimeIndex: number,
-	timeOptions: number[],
+	mode: "time" | "words",
+	selectedIndex: number,
+	options: number[],
 ): StyledText {
 	const chunks: TextChunk[] = [];
 
 	// Title
 	chunks.push(colored(`Monkeyterm v${VERSION}\n\n`, HEADER_FG));
-	chunks.push(
-		...stringToStyledText("Select time and Press Enter to start\n\n").chunks,
-	);
+
+	// Mode header
+	const otherMode = mode === "time" ? "Words" : "Time";
+	chunks.push(colored(`${MODE_LABELS[mode]}`, SELECTED_FG));
+	chunks.push(...stringToStyledText(`  ·  ${otherMode}\n\n`).chunks);
 
 	// Options
-	for (let i = 0; i < timeOptions.length; i++) {
-		const sel = i === selectedTimeIndex;
+	const suffix = mode === "time" ? "s" : " words";
+	for (let i = 0; i < options.length; i++) {
+		const sel = i === selectedIndex;
 		if (sel) {
-			chunks.push(colored(`▸ ${timeOptions[i]}s\n`, SELECTED_FG));
+			chunks.push(colored(`▸ ${options[i]}${suffix}\n`, SELECTED_FG));
 		} else {
-			chunks.push(...stringToStyledText(`  ${timeOptions[i]}s\n`).chunks);
+			chunks.push(...stringToStyledText(`  ${options[i]}${suffix}\n`).chunks);
 		}
 	}
 
 	// Hints
 	chunks.push(
-		...stringToStyledText("\n↑↓ Navigate · Enter Start · Ctrl+C Quit").chunks,
+		...stringToStyledText("\n← → Mode · ↑↓ Option · Enter Start · Ctrl+C Quit").chunks,
 	);
 
 	return new StyledText(chunks);
@@ -170,7 +176,9 @@ export function buildResults(result: SessionResult): StyledText {
 			chunks.push(colored(padded, SELECTED_FG));
 			chunks.push(colored("│\n", HEADER_FG));
 		} else if (isSpacer) {
-			chunks.push(colored("│" + " ".repeat(contentWidth + 2) + "│\n", HEADER_FG));
+			chunks.push(
+				colored("│" + " ".repeat(contentWidth + 2) + "│\n", HEADER_FG),
+			);
 		} else {
 			chunks.push(colored("│", HEADER_FG));
 			chunks.push(...stringToStyledText(padded).chunks);

@@ -103,28 +103,65 @@ describe("shuffleWords", () => {
 describe("buildMenu", () => {
 	it("should return StyledText with version", async () => {
 		const { buildMenu } = await import("./screens");
-		const menu = buildMenu(1, [15, 30, 60, 120]);
+		const menu = buildMenu("time", 1, [15, 30, 60, 120]);
 		expect(menu).toBeInstanceOf(StyledText);
 		const text = chunkText(menu.chunks);
 		expect(text).toContain("Monkeyterm v");
 	});
 
-	it("should mark selected option with triangle", async () => {
+	it("should show mode header", async () => {
 		const { buildMenu } = await import("./screens");
-		const menu = buildMenu(1, [15, 30, 60, 120]);
+		const menu = buildMenu("time", 0, [15, 30]);
 		const text = chunkText(menu.chunks);
-		const lines = text.split("\n");
-		expect(lines[5]).toContain("▸");
-		expect(lines[4]).toContain("  ");
+		expect(text).toContain("Time");
 	});
 
-	it("should mark first option with triangle when selected", async () => {
+	it("should show Words mode header", async () => {
 		const { buildMenu } = await import("./screens");
-		const menu = buildMenu(0, [15, 30]);
+		const menu = buildMenu("words", 0, [10, 25, 50]);
+		const text = chunkText(menu.chunks);
+		expect(text).toContain("Words");
+	});
+
+	it("should mark selected time option with triangle", async () => {
+		const { buildMenu } = await import("./screens");
+		const menu = buildMenu("time", 1, [15, 30, 60, 120]);
 		const text = chunkText(menu.chunks);
 		const lines = text.split("\n");
-		expect(lines[4]).toContain("▸");
-		expect(lines[5]).toContain("  ");
+		const idx = lines.findIndex((l) => l.includes("▸"));
+		expect(idx).toBeGreaterThanOrEqual(0);
+		expect(lines[idx]).toContain("30");
+	});
+
+	it("should mark selected word count option with triangle", async () => {
+		const { buildMenu } = await import("./screens");
+		const menu = buildMenu("words", 2, [10, 25, 50, 100]);
+		const text = chunkText(menu.chunks);
+		const lines = text.split("\n");
+		const idx = lines.findIndex((l) => l.includes("▸"));
+		expect(idx).toBeGreaterThanOrEqual(0);
+		expect(lines[idx]).toContain("50");
+	});
+
+	it("should show seconds suffix in time mode", async () => {
+		const { buildMenu } = await import("./screens");
+		const menu = buildMenu("time", 0, [30]);
+		const text = chunkText(menu.chunks);
+		expect(text).toContain("30s");
+	});
+
+	it("should show words suffix in words mode", async () => {
+		const { buildMenu } = await import("./screens");
+		const menu = buildMenu("words", 0, [25]);
+		const text = chunkText(menu.chunks);
+		expect(text).toContain("25 words");
+	});
+
+	it("should show Enter start hint", async () => {
+		const { buildMenu } = await import("./screens");
+		const menu = buildMenu("time", 0, [15, 30]);
+		const text = chunkText(menu.chunks);
+		expect(text).toContain("Enter");
 	});
 });
 
