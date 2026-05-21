@@ -3,7 +3,9 @@
 Este proyecto usa un enfoque **híbrido** para documentación de desarrollo:
 
 ## OpenSpec (`openspec/changes/`)
+
 Archivos committed al repo. Contienen documentación **permanente y compartible**:
+
 - SDD proposals, specs, designs, tasks
 - Decisiones arquitectónicas consolidadas
 - Criterios de aceptación y casos de prueba
@@ -11,7 +13,9 @@ Archivos committed al repo. Contienen documentación **permanente y compartible*
 Cualquier developer que clone el repo los ve sin depender del agente.
 
 ## Engram (memoria persistente)
+
 No va al repo. Contiene documentación **del momento y contextual**:
+
 - Descubrimientos técnicos y gotchas
 - Decisiones rápidas durante la sesión
 - Resúmenes de sesión para retomar después
@@ -22,12 +26,29 @@ El agente guarda en Engram automáticamente; no hay que acordarse.
 
 ## Regla práctica
 
-| Situación | Guardar en |
-|-----------|-----------|
-| Spec/design aprobado | OpenSpec |
-| Tasks para implementar | OpenSpec |
-| Bug descubierto durante revisión | Engram |
-| Decisión rápida del usuario | Engram |
-| Resumen de sesión | Engram |
-| Propuesta de nuevo feature | Ambos |
-| Verify report / Judgment Day | Ambos |
+| Situación                        | Guardar en |
+| -------------------------------- | ---------- |
+| Spec/design aprobado             | OpenSpec   |
+| Tasks para implementar           | OpenSpec   |
+| Bug descubierto durante revisión | Engram     |
+| Decisión rápida del usuario      | Engram     |
+| Resumen de sesión                | Engram     |
+| Propuesta de nuevo feature       | Ambos      |
+| Verify report / Judgment Day     | Ambos      |
+
+---
+
+## Git Workflow
+
+**Opción A:** Rama `dev` para trabajo diario, `main` solo recibe merges.
+
+```
+main (siempre estable)
+  ↑ PR o merge
+  |
+dev (trabajo diario, commits directos)
+```
+
+- Commits directos a `dev` sin PR
+- Cuando `dev` tiene cambios estables → PR o merge a `main`
+- Fixes mínimos (<10 líneas) pueden ir directo a `main`
