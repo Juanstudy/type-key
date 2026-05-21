@@ -6,25 +6,20 @@ import { TypingEngine } from "./engine/typing";
 import { Timer } from "./engine/timer";
 import { WPMCalculator } from "./engine/wpm";
 
-import type { Letter } from "./lib/types";
-import wordlist from "./data/wordlists/english.json";
+import {
+	shuffleWords,
+	buildMenu,
+	buildGame,
+	buildResults,
+	type SessionResult,
+} from "./screens";
 
 interface KeyEvent {
 	name?: string;
 	ctrl?: boolean;
 }
 
-const VERSION = "1.0.0";
 const TIME_OPTIONS: TimeOption[] = [15, 30, 60, 120];
-
-interface SessionResult {
-	wpm: number;
-	rawWpm: number;
-	accuracy: number;
-	correctChars: number;
-	totalChars: number;
-	errors: number;
-}
 
 const state: {
 	screen: ScreenName;
@@ -52,23 +47,7 @@ const state: {
 
 const wpmCalc = new WPMCalculator();
 
-function shuffleWords(count: number): string[] {
-	const a = [...wordlist];
-	for (let i = a.length - 1; i > 0; i--) {
-		const j = Math.floor(Math.random() * (i + 1));
-		const vi = a[i] as string;
-		const vj = a[j] as string;
-		a[i] = vj;
-		a[j] = vi;
-	}
-	return a.slice(0, count);
-}
 
-function wordText(word: { letters: Letter[]; isCompleted: boolean }): string {
-	return (
-		word.letters.map((l) => l.char).join("") + (word.isCompleted ? "" : " ")
-	);
-}
 
 const SCREEN_TEXT_ID = "screen-content";
 
@@ -82,53 +61,11 @@ function show(text: string): void {
 	renderer.requestRender();
 }
 
-function buildMenu(): string {
-	let s = `Monkeyterm v${VERSION}\n\n`;
-	s += "Select time and press Enter to start\n\n";
-	for (let i = 0; i < TIME_OPTIONS.length; i++) {
-		const sel = i === state.selectedTimeIndex;
-		s += `${sel ? "▸ " : "  "}${TIME_OPTIONS[i]}s\n`;
-	}
-	s += "\n↑↓ Navigate · Enter Start · Ctrl+C Quit";
-	return s;
-}
 
-function buildGame(): string {
-	if (!state.engine || !state.timer) return "";
-	const gs = state.engine.getGameState();
-	const remaining = Math.ceil(state.timer.getRemainingSeconds());
 
-	let s = `⏱ ${remaining}s    WPM: ${state.liveWpm}  RAW: ${state.liveRawWpm}\n\n`;
 
-	const words = gs.words;
-	const curIdx = gs.currentWordIndex;
-	const start = Math.max(0, curIdx - 1);
-	const end = Math.min(words.length, start + 3);
 
-	for (let i = start; i < end; i++) {
-		const word = words[i];
-		if (word) s += wordText(word) + "\n";
-	}
 
-	s += "\nEsc: Menu · Ctrl+C: Quit";
-	return s;
-}
-
-function buildResults(): string {
-	if (!state.result) return "";
-	const r = state.result;
-	return [
-		"— Results —",
-		"",
-		`WPM:        ${r.wpm}`,
-		`Raw WPM:    ${r.rawWpm}`,
-		`Accuracy:   ${r.accuracy}%`,
-		`Chars:      ${r.correctChars} / ${r.totalChars}`,
-		`Errors:     ${r.errors}`,
-		"",
-		"Tab: Restart · Esc: Menu · Ctrl+C: Quit",
-	].join("\n");
-}
 
 // ── Screen transitions ────────────────────────────────────────────────────
 
@@ -141,7 +78,7 @@ function goMenu(): void {
 	state.liveWpm = 0;
 	state.liveRawWpm = 0;
 	state.elapsedSeconds = 0;
-	show(buildMenu());
+	show(buildMenu(state.selectedTimeIndex, TIME_OPTIONS));
 }
 
 function goGame(): void {
@@ -162,14 +99,21 @@ function goGame(): void {
 			onTick: (remainingSec: number) => {
 				state.elapsedSeconds = timeOpt - remainingSec;
 				updateLiveWpm();
-				show(buildGame());
+				showGame();
 			},
 			onComplete: () => goResults(),
 		},
 		250,
 	);
 
-	show(buildGame());
+	showGame();
+}
+
+function showGame(): void {
+	if (!state.engine || !state.timer) return;
+	const gs = state.engine.getGameState();
+	const remaining = Math.ceil(state.timer.getRemainingSeconds());
+	show(buildGame(remaining, state.liveWpm, state.liveRawWpm, gs.words, gs.currentWordIndex));
 }
 
 function goResults(): void {
@@ -192,7 +136,7 @@ function goResults(): void {
 			errors: gs.errors,
 		};
 	}
-	show(buildResults());
+	show(buildResults(state.result!));
 }
 
 function updateLiveWpm(): void {
@@ -229,13 +173,13 @@ function handleKey(key: KeyEvent): void {
 		case "menu":
 			if (key.name === "up") {
 				state.selectedTimeIndex = Math.max(0, state.selectedTimeIndex - 1);
-				show(buildMenu());
+				show(buildMenu(state.selectedTimeIndex, TIME_OPTIONS));
 			} else if (key.name === "down") {
 				state.selectedTimeIndex = Math.min(
 					TIME_OPTIONS.length - 1,
 					state.selectedTimeIndex + 1,
 				);
-				show(buildMenu());
+				show(buildMenu(state.selectedTimeIndex, TIME_OPTIONS));
 			} else if (key.name === "return" || key.name === "enter") {
 				goGame();
 			}
@@ -261,13 +205,13 @@ function handleKey(key: KeyEvent): void {
 
 			if (key.name === "backspace") {
 				state.engine.backspace();
-				show(buildGame());
+				showGame();
 			} else if (key.name === "space") {
 				state.engine.type(" ");
-				show(buildGame());
+				showGame();
 			} else if (key.name && key.name.length === 1) {
 				state.engine.type(key.name);
-				show(buildGame());
+				showGame();
 			}
 			break;
 		}

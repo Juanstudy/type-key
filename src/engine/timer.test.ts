@@ -88,6 +88,38 @@ describe("Timer", () => {
 		});
 	});
 
+	describe("stop and resume interaction", () => {
+		it("should allow resume after stop (regression: completed flag was not reset)", () => {
+			const timer = new Timer(60, {
+				onStart: mock(() => {}),
+				onTick: mock(() => {}),
+				onComplete: mock(() => {}),
+			});
+			timer.start();
+			timer.stop();
+			// After stop, completed=true. Resume must clear it to tick again.
+			timer.resume();
+			expect(timer.isRunning()).toBe(true);
+			timer.stop();
+		});
+
+		it("should tick after stop + resume (regression: completed guard blocked ticks)", async () => {
+			const onTick = mock(() => {});
+			const timer = new Timer(
+				1,
+				{ onStart: mock(() => {}), onTick, onComplete: mock(() => {}) },
+				10,
+			);
+			timer.start();
+			await Bun.sleep(15);
+			timer.stop();
+			timer.resume();
+			await Bun.sleep(30);
+			expect(onTick.mock.calls.length).toBeGreaterThanOrEqual(1);
+			timer.stop();
+		});
+	});
+
 	describe("pause and resume", () => {
 		it("should pause timer on pause()", () => {
 			const timer = new Timer(60, {
