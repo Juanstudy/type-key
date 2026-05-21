@@ -18,16 +18,23 @@ Generated: 2026-05-17
 - **Artifact Store**: openspec
 - **Execution Mode**: interactive
 
-## Skill Files
+## User / Project Skills
 
-- `sdd-init.md` - Initialization skill
-- `sdd-explore.md` - Exploration skill
-- `sdd-onboard.md` - Onboarding skill
-- `sdd-proposal.md` - Proposal skill
-- `sdd-spec.md` - Specification skill
-- `sdd-design.md` - Design skill
-- `sdd-tasks.md` - Task breakdown skill
-- `sdd-apply.md` - Implementation skill
-- `sdd-verify.md` - Verification skill
-- `sdd-sync.md` - Synchronization skill
-- `sdd-archive.md` - Archival skill
+| Trigger | Skill | Path |
+| ------- | ----- | ---- |
+| Workflow, git flow, artifacts policy | type-key-workflow | `.agents/skills/type-key-workflow/SKILL.md` |
+| TypeScript expert advice | typescript-expert | `.agents/skills/typescript-expert/SKILL.md` |
+
+## SDD Skills (builtin)
+
+- `sdd-init.md` - Initialization
+- `sdd-explore.md` - Exploration
+- `sdd-onboard.md` - Onboarding
+- `sdd-proposal.md` - Proposal
+- `sdd-spec.md` - Specification
+- `sdd-design.md` - Design
+- `sdd-tasks.md` - Task breakdown
+- `sdd-apply.md` - Implementation
+- `sdd-verify.md` - Verification
+- `sdd-sync.md` - Synchronization
+- `sdd-archive.md` - Archival
