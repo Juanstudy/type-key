@@ -51,10 +51,10 @@ const SCREEN_TEXT_ID = "screen-content";
 
 let renderer: CliRenderer | null = null;
 
-function show(text: string): void {
+function show(content: import("@opentui/core").StyledText | string): void {
 	if (!renderer) return;
 	renderer.root.remove(SCREEN_TEXT_ID);
-	const el = Text({ content: text, id: SCREEN_TEXT_ID });
+	const el = Text({ content, id: SCREEN_TEXT_ID });
 	renderer.root.add(el);
 	renderer.requestRender();
 }
@@ -230,6 +230,10 @@ function handleKey(key: KeyEvent): void {
 
 async function main(): Promise<void> {
 	renderer = await createCliRenderer({ exitOnCtrlC: false });
+
+	// Center content via flexbox on root
+	renderer.root.justifyContent = "center";
+	renderer.root.alignItems = "center";
 
 	// Key handler: renderer.keyInput is an EventEmitter.
 	// as unknown as { on: ... } is safe because keyInput is always present
