@@ -152,6 +152,32 @@ PREFER:
 
 ---
 
+## Git Workflow (Opción A)
+
+```text
+main (siempre estable)
+  ↑ PR o merge
+  |
+dev (trabajo diario, commits directos)
+```
+
+- Trabajar en `dev` con commits directos, sin PR
+- `dev` → `main`: PR o merge cuando hay cambios estables
+- Fixes <10 líneas: pueden ir directo a `main`
+- No long-lived branches, no stacked PRs
+
+## Artifacts Policy (Híbrido)
+
+| Situación | Guardar en |
+|-----------|-----------|
+| Spec/design aprobado | OpenSpec (`openspec/changes/`) |
+| Tasks para implementar | OpenSpec |
+| Bug/descubrimiento técnico | Engram |
+| Decisión rápida del usuario | Engram |
+| Resumen de sesión | Engram |
+| Propuesta de nuevo feature | Ambos |
+| Verify report / Judgment Day | Ambos |
+
 ## Response Format
 
 FIRST LINE must be exactly:

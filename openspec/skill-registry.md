@@ -20,10 +20,10 @@ Generated: 2026-05-17
 
 ## User / Project Skills
 
-| Trigger | Skill | Path |
-| ------- | ----- | ---- |
-| Workflow, git flow, artifacts policy | type-key-workflow | `.agents/skills/type-key-workflow/SKILL.md` |
-| TypeScript expert advice | typescript-expert | `.agents/skills/typescript-expert/SKILL.md` |
+| Trigger                              | Skill             | Path                                        |
+| ------------------------------------ | ----------------- | ------------------------------------------- |
+| Workflow, git flow, artifacts policy | — (incluido en AGENTS.md) | `docs/AGENTS.md` |
+| TypeScript expert advice             | typescript-expert | `.agents/skills/typescript-expert/SKILL.md` |
 
 ## SDD Skills (builtin)
 

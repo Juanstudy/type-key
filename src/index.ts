@@ -82,9 +82,7 @@ function removeTitleFont(): void {
 }
 
 function getMenuOptions(): number[] {
-	return state.mode === "time"
-		? [...TIME_OPTIONS]
-		: [...WORD_COUNT_OPTIONS];
+	return state.mode === "time" ? [...TIME_OPTIONS] : [...WORD_COUNT_OPTIONS];
 }
 
 function getMenuSelectedIndex(): number {
@@ -228,7 +226,10 @@ function handleKey(key: KeyEvent): void {
 				if (state.mode === "time") {
 					state.selectedTimeIndex = Math.max(0, state.selectedTimeIndex - 1);
 				} else {
-					state.selectedWordCountIndex = Math.max(0, state.selectedWordCountIndex - 1);
+					state.selectedWordCountIndex = Math.max(
+						0,
+						state.selectedWordCountIndex - 1,
+					);
 				}
 				show(buildMenu(state.mode, getMenuSelectedIndex(), getMenuOptions()));
 			} else if (key.name === "down") {

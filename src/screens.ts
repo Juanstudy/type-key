@@ -98,7 +98,8 @@ export function buildMenu(
 
 	// Hints
 	chunks.push(
-		...stringToStyledText("\n← → Mode · ↑↓ Option · Enter Start · Ctrl+C Quit").chunks,
+		...stringToStyledText("\n← → Mode · ↑↓ Option · Enter Start · Ctrl+C Quit")
+			.chunks,
 	);
 
 	return new StyledText(chunks);
