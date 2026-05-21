@@ -1,4 +1,4 @@
-import { createCliRenderer, Text } from "@opentui/core";
+import { createCliRenderer, Text, ASCIIFont } from "@opentui/core";
 import type { CliRenderer } from "@opentui/core";
 import type { ScreenName, TimeOption } from "./lib/types";
 import { TypingEngine } from "./engine/typing";
@@ -48,6 +48,7 @@ const state: {
 const wpmCalc = new WPMCalculator();
 
 const SCREEN_TEXT_ID = "screen-content";
+const TITLE_FONT_ID = "menu-title";
 
 let renderer: CliRenderer | null = null;
 
@@ -61,6 +62,18 @@ function show(content: import("@opentui/core").StyledText | string): void {
 
 // ── Screen transitions ────────────────────────────────────────────────────
 
+function addTitleFont(): void {
+	if (!renderer) return;
+	renderer.root.remove(TITLE_FONT_ID);
+	renderer.root.add(ASCIIFont({ text: "Monkeyterm", font: "slick", id: TITLE_FONT_ID }));
+	renderer.requestRender();
+}
+
+function removeTitleFont(): void {
+	if (!renderer) return;
+	renderer.root.remove(TITLE_FONT_ID);
+}
+
 function goMenu(): void {
 	state.screen = "menu";
 	state.engine = null;
@@ -70,6 +83,8 @@ function goMenu(): void {
 	state.liveWpm = 0;
 	state.liveRawWpm = 0;
 	state.elapsedSeconds = 0;
+	removeTitleFont();
+	addTitleFont();
 	show(buildMenu(state.selectedTimeIndex, TIME_OPTIONS));
 }
 
@@ -83,6 +98,7 @@ function goGame(): void {
 	state.liveRawWpm = 0;
 	state.elapsedSeconds = 0;
 
+	removeTitleFont();
 	if (state.timer) state.timer.stop();
 	state.timer = new Timer(
 		timeOpt,
@@ -136,6 +152,7 @@ function goResults(): void {
 			errors: gs.errors,
 		};
 	}
+	removeTitleFont();
 	show(buildResults(state.result!));
 }
 

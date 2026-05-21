@@ -60,7 +60,8 @@ describe("wordText", () => {
 		expect(chunkText(chunks)).toBe("ax ");
 		// Extra char should have different styling than correct
 		// At minimum, should have fg set
-		const c0 = chunks[0], c1 = chunks[1];
+		const c0 = chunks[0],
+			c1 = chunks[1];
 		if (c0) expect(chunkFg(c0)).toBeTruthy();
 		if (c1) expect(chunkFg(c1)).toBeTruthy();
 	});
@@ -68,9 +69,7 @@ describe("wordText", () => {
 	it("should color incorrect letters", async () => {
 		const { wordText } = await import("./screens");
 		const word = {
-			letters: [
-				{ char: "h", state: "incorrect" as const },
-			],
+			letters: [{ char: "h", state: "incorrect" as const }],
 			hasError: true,
 			isCompleted: false,
 		};

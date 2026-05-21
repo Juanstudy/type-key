@@ -76,7 +76,9 @@ export function buildMenu(
 
 	// Title
 	chunks.push(colored(`Monkeyterm v${VERSION}\n\n`, HEADER_FG));
-	chunks.push(...stringToStyledText("Select time and Press Enter to start\n\n").chunks);
+	chunks.push(
+		...stringToStyledText("Select time and Press Enter to start\n\n").chunks,
+	);
 
 	// Options
 	for (let i = 0; i < timeOptions.length; i++) {
@@ -89,7 +91,9 @@ export function buildMenu(
 	}
 
 	// Hints
-	chunks.push(...stringToStyledText("\n↑↓ Navigate · Enter Start · Ctrl+C Quit").chunks);
+	chunks.push(
+		...stringToStyledText("\n↑↓ Navigate · Enter Start · Ctrl+C Quit").chunks,
+	);
 
 	return new StyledText(chunks);
 }
@@ -104,7 +108,12 @@ export function buildGame(
 	const chunks: TextChunk[] = [];
 
 	// Header — muted color
-	chunks.push(colored(`⏱ ${remainingSeconds}s    WPM: ${liveWpm}  RAW: ${liveRawWpm}\n\n`, HEADER_FG));
+	chunks.push(
+		colored(
+			`⏱ ${remainingSeconds}s    WPM: ${liveWpm}  RAW: ${liveRawWpm}\n\n`,
+			HEADER_FG,
+		),
+	);
 
 	// Words — only show 3 lines around current position
 	const start = Math.max(0, currentWordIndex - 1);
@@ -125,18 +134,52 @@ export function buildGame(
 	return new StyledText(chunks);
 }
 
+function padCenter(s: string, width: number): string {
+	const pad = Math.max(0, width - s.length);
+	const left = Math.floor(pad / 2);
+	const right = pad - left;
+	return " ".repeat(left) + s + " ".repeat(right);
+}
+
 export function buildResults(result: SessionResult): StyledText {
+	const lines: string[] = [
+		"— Results —",
+		"",
+		`WPM:        ${result.wpm}`,
+		`Raw WPM:    ${result.rawWpm}`,
+		`Accuracy:   ${result.accuracy}%`,
+		`Chars:      ${result.correctChars} / ${result.totalChars}`,
+		`Errors:     ${result.errors}`,
+		"",
+		"Tab: Restart · Esc: Menu · Ctrl+C: Quit",
+	];
+
+	const contentWidth = Math.max(...lines.map((l) => l.length), 20);
+
 	const chunks: TextChunk[] = [];
 
-	chunks.push(colored("— Results —\n\n", SELECTED_FG));
-	chunks.push(...stringToStyledText(
-		`WPM:        ${result.wpm}\n` +
-		`Raw WPM:    ${result.rawWpm}\n` +
-		`Accuracy:   ${result.accuracy}%\n` +
-		`Chars:      ${result.correctChars} / ${result.totalChars}\n` +
-		`Errors:     ${result.errors}\n\n` +
-		"Tab: Restart · Esc: Menu · Ctrl+C: Quit"
-	).chunks);
+	// Top border
+	chunks.push(colored("┌" + "─".repeat(contentWidth + 2) + "┐\n", HEADER_FG));
+
+	for (const line of lines) {
+		const isTitle = line === lines[0];
+		const isSpacer = line === "";
+		const padded = " " + padCenter(line, contentWidth) + " ";
+		if (isTitle) {
+			chunks.push(colored("│", HEADER_FG));
+			chunks.push(colored(padded, SELECTED_FG));
+			chunks.push(colored("│\n", HEADER_FG));
+		} else if (isSpacer) {
+			chunks.push(colored("│" + " ".repeat(contentWidth + 2) + "│\n", HEADER_FG));
+		} else {
+			chunks.push(colored("│", HEADER_FG));
+			chunks.push(...stringToStyledText(padded).chunks);
+			chunks.push(colored("│\n", HEADER_FG));
+		}
+	}
+
+	// Bottom border
+	chunks.push(colored("└" + "─".repeat(contentWidth + 2) + "┘", HEADER_FG));
 
 	return new StyledText(chunks);
 }
