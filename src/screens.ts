@@ -10,7 +10,10 @@ export interface SessionResult {
 	errors: number;
 }
 
-export function wordText(word: { letters: Letter[]; isCompleted: boolean }): string {
+export function wordText(word: {
+	letters: Letter[];
+	isCompleted: boolean;
+}): string {
 	return (
 		word.letters.map((l) => l.char).join("") + (word.isCompleted ? "" : " ")
 	);
@@ -30,7 +33,10 @@ export function shuffleWords(count: number): string[] {
 
 export const VERSION = "1.0.0";
 
-export function buildMenu(selectedTimeIndex: number, timeOptions: number[]): string {
+export function buildMenu(
+	selectedTimeIndex: number,
+	timeOptions: number[],
+): string {
 	let s = `Monkeyterm v${VERSION}\n\n`;
 	s += "Select time and press Enter to start\n\n";
 	for (let i = 0; i < timeOptions.length; i++) {

@@ -47,8 +47,6 @@ const state: {
 
 const wpmCalc = new WPMCalculator();
 
-
-
 const SCREEN_TEXT_ID = "screen-content";
 
 let renderer: CliRenderer | null = null;
@@ -60,12 +58,6 @@ function show(text: string): void {
 	renderer.root.add(el);
 	renderer.requestRender();
 }
-
-
-
-
-
-
 
 // ── Screen transitions ────────────────────────────────────────────────────
 
@@ -113,7 +105,15 @@ function showGame(): void {
 	if (!state.engine || !state.timer) return;
 	const gs = state.engine.getGameState();
 	const remaining = Math.ceil(state.timer.getRemainingSeconds());
-	show(buildGame(remaining, state.liveWpm, state.liveRawWpm, gs.words, gs.currentWordIndex));
+	show(
+		buildGame(
+			remaining,
+			state.liveWpm,
+			state.liveRawWpm,
+			gs.words,
+			gs.currentWordIndex,
+		),
+	);
 }
 
 function goResults(): void {
