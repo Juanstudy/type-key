@@ -9,6 +9,11 @@ import { WPMCalculator } from "./engine/wpm";
 import type { Letter } from "./lib/types";
 import wordlist from "./data/wordlists/english.json";
 
+interface KeyEvent {
+	name?: string;
+	ctrl?: boolean;
+}
+
 const VERSION = "1.0.0";
 const TIME_OPTIONS: TimeOption[] = [15, 30, 60, 120];
 
@@ -51,7 +56,10 @@ function shuffleWords(count: number): string[] {
 	const a = [...wordlist];
 	for (let i = a.length - 1; i > 0; i--) {
 		const j = Math.floor(Math.random() * (i + 1));
-		[a[i], a[j]] = [a[j]!, a[i]!];
+		const vi = a[i] as string;
+		const vj = a[j] as string;
+		a[i] = vj;
+		a[j] = vi;
 	}
 	return a.slice(0, count);
 }
@@ -62,20 +70,15 @@ function wordText(word: { letters: Letter[]; isCompleted: boolean }): string {
 	);
 }
 
-// ── Screen content builders ───────────────────────────────────────────────
+const SCREEN_TEXT_ID = "screen-content";
 
 let renderer: CliRenderer | null = null;
-let screenText: ReturnType<typeof Text> | null = null;
 
 function show(text: string): void {
 	if (!renderer) return;
-	// Note: Text.content setter doesn't work via VNode proxy,
-	// so we must remove and recreate the element
-	if (screenText) {
-		renderer.root.remove((screenText as any).id ?? "");
-	}
-	screenText = Text({ content: text });
-	renderer.root.add(screenText);
+	renderer.root.remove(SCREEN_TEXT_ID);
+	const el = Text({ content: text, id: SCREEN_TEXT_ID });
+	renderer.root.add(el);
 	renderer.requestRender();
 }
 
@@ -103,7 +106,8 @@ function buildGame(): string {
 	const end = Math.min(words.length, start + 3);
 
 	for (let i = start; i < end; i++) {
-		s += wordText(words[i]!) + "\n";
+		const word = words[i];
+		if (word) s += wordText(word) + "\n";
 	}
 
 	s += "\nEsc: Menu · Ctrl+C: Quit";
@@ -141,9 +145,9 @@ function goMenu(): void {
 }
 
 function goGame(): void {
-	const timeOpt = TIME_OPTIONS[state.selectedTimeIndex]!;
+	const timeOpt = TIME_OPTIONS[state.selectedTimeIndex] ?? 30;
 	state.screen = "game";
-	state.engine = new TypingEngine(shuffleWords(50));
+	state.engine = new TypingEngine(shuffleWords(50)); // 50 words fixed for timed mode (WordCountOption for future)
 	state.result = null;
 	state.gameStarted = false;
 	state.liveWpm = 0;
@@ -208,7 +212,19 @@ function updateLiveWpm(): void {
 
 // ── Keyboard handling ─────────────────────────────────────────────────────
 
-function handleKey(key: any): void {
+function handleQuit(): void {
+	state.timer?.stop();
+	renderer?.destroy();
+	process.exit(0);
+}
+
+function handleKey(key: KeyEvent): void {
+	// Ctrl+C / Ctrl+Q: quit (terminal en raw mode, no llega SIGINT)
+	if (key.name === "c" && key.ctrl) {
+		handleQuit();
+		return;
+	}
+
 	switch (state.screen) {
 		case "menu":
 			if (key.name === "up") {
@@ -235,6 +251,7 @@ function handleKey(key: any): void {
 
 			if (
 				!state.gameStarted &&
+				key.name &&
 				key.name !== "backspace" &&
 				key.name.length === 1
 			) {
@@ -270,13 +287,16 @@ function handleKey(key: any): void {
 async function main(): Promise<void> {
 	renderer = await createCliRenderer({ exitOnCtrlC: false });
 
-	// Key handler: as any needed for TS6 EventEmitter compatibility
-	(renderer.keyInput as any).on("keypress", (key: any) => handleKey(key));
+	// Key handler: renderer.keyInput is an EventEmitter.
+	// as unknown as { on: ... } is safe because keyInput is always present
+	// on CliRenderer and its constructor guarantees it extends EventEmitter.
+	(
+		renderer.keyInput as unknown as {
+			on(event: string, handler: (key: KeyEvent) => void): void;
+		}
+	).on("keypress", (key) => handleKey(key));
 
-	process.on("SIGINT", () => {
-		renderer?.destroy();
-		process.exit(0);
-	});
+	process.on("SIGINT", handleQuit);
 
 	goMenu();
 }

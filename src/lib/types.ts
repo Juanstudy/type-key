@@ -25,17 +25,6 @@ export interface GameConfig {
 	language: Language;
 }
 
-export interface SessionResult {
-	date: string;
-	wpm: number;
-	rawWpm: number;
-	accuracy: number;
-	mode: GameMode;
-	duration?: number;
-	wordCount?: number;
-	language: string;
-	chars: number;
-	errors: number;
-}
+// SessionResult is defined locally in index.ts — exported type removed until history screen is built
 
-export type ScreenName = "menu" | "game" | "results" | "history";
+export type ScreenName = "menu" | "game" | "results";

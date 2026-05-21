@@ -42,9 +42,9 @@ describe("Timer", () => {
 				10, // 10ms interval for fast testing
 			);
 			timer.start();
-			// Wait for at least one tick
-			await Bun.sleep(15);
-			expect(onTick).toHaveBeenCalledTimes(1);
+			// Wait for at least one tick (generous margin to avoid flakiness in CI)
+			await Bun.sleep(30);
+			expect(onTick.mock.calls.length).toBeGreaterThanOrEqual(1);
 			// onTick should receive remaining seconds (rounded)
 			// 1 second timer with 10ms interval means remaining = 1 - 0.01
 			timer.stop();

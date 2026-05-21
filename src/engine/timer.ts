@@ -51,11 +51,12 @@ export class Timer {
 		}
 
 		this.startTimestamp = Date.now();
+		const startTs = this.startTimestamp;
 		this.intervalId = setInterval(() => {
 			// Prevent onComplete from firing more than once
 			if (this.completed) return;
 
-			this.elapsedMs = Date.now() - this.startTimestamp!;
+			this.elapsedMs = Date.now() - startTs;
 			const remaining = Math.max(
 				0,
 				this.durationSeconds * 1000 - this.elapsedMs,
@@ -91,13 +92,15 @@ export class Timer {
 
 	resume(): void {
 		if (this.running) return;
+		this.completed = false;
 		this.running = true;
 		this.startTimestamp = Date.now();
+		const resumeTs = this.startTimestamp;
 
 		this.intervalId = setInterval(() => {
 			if (this.completed) return;
 
-			this.elapsedMs += Date.now() - this.startTimestamp!;
+			this.elapsedMs += Date.now() - resumeTs;
 			this.startTimestamp = Date.now();
 			const remaining = Math.max(
 				0,
