@@ -168,15 +168,15 @@ dev (trabajo diario, commits directos)
 
 ## Artifacts Policy (Híbrido)
 
-| Situación | Guardar en |
-|-----------|-----------|
-| Spec/design aprobado | OpenSpec (`openspec/changes/`) |
-| Tasks para implementar | OpenSpec |
-| Bug/descubrimiento técnico | Engram |
-| Decisión rápida del usuario | Engram |
-| Resumen de sesión | Engram |
-| Propuesta de nuevo feature | Ambos |
-| Verify report / Judgment Day | Ambos |
+| Situación                    | Guardar en                     |
+| ---------------------------- | ------------------------------ |
+| Spec/design aprobado         | OpenSpec (`openspec/changes/`) |
+| Tasks para implementar       | OpenSpec                       |
+| Bug/descubrimiento técnico   | Engram                         |
+| Decisión rápida del usuario  | Engram                         |
+| Resumen de sesión            | Engram                         |
+| Propuesta de nuevo feature   | Ambos                          |
+| Verify report / Judgment Day | Ambos                          |
 
 ## Response Format
 

@@ -35,6 +35,7 @@ const state: {
 	liveRawWpm: number;
 	gameStarted: boolean;
 	elapsedSeconds: number;
+	wpmHistory: number[];
 } = {
 	screen: "menu",
 	mode: "time",
@@ -48,6 +49,7 @@ const state: {
 	liveRawWpm: 0,
 	gameStarted: false,
 	elapsedSeconds: 0,
+	wpmHistory: [],
 };
 
 const wpmCalc = new WPMCalculator();
@@ -100,6 +102,7 @@ function goMenu(): void {
 	state.liveWpm = 0;
 	state.liveRawWpm = 0;
 	state.elapsedSeconds = 0;
+	state.wpmHistory = [];
 	removeTitleFont();
 	addTitleFont();
 	show(buildMenu(state.mode, getMenuSelectedIndex(), getMenuOptions()));
@@ -122,6 +125,7 @@ function goGame(): void {
 	state.liveWpm = 0;
 	state.liveRawWpm = 0;
 	state.elapsedSeconds = 0;
+	state.wpmHistory = [];
 
 	removeTitleFont();
 	if (state.timer) state.timer.stop();
@@ -184,7 +188,7 @@ function goResults(): void {
 		};
 	}
 	removeTitleFont();
-	show(buildResults(state.result!));
+	show(buildResults(state.result!, state.wpmHistory));
 }
 
 function updateLiveWpm(): void {
@@ -200,6 +204,7 @@ function updateLiveWpm(): void {
 	});
 	state.liveWpm = stats.grossWPM;
 	state.liveRawWpm = stats.rawWPM;
+	state.wpmHistory.push(stats.grossWPM);
 }
 
 // ── Keyboard handling ─────────────────────────────────────────────────────

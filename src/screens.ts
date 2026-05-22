@@ -2,6 +2,7 @@ import type { Letter, Word } from "./lib/types";
 import wordlist from "./data/wordlists/english.json";
 import { StyledText, stringToStyledText } from "@opentui/core";
 import type { TextChunk } from "@opentui/core";
+import asciichart from "asciichart";
 
 export interface SessionResult {
 	wpm: number;
@@ -141,6 +142,31 @@ export function buildGame(
 	return new StyledText(chunks);
 }
 
+/**
+ * Downsample an array to at most `maxPoints` by taking evenly spaced samples.
+ */
+function downsample(data: number[], maxPoints: number): number[] {
+	if (data.length <= maxPoints) return [...data];
+	const step = (data.length - 1) / (maxPoints - 1);
+	const result: number[] = [];
+	for (let i = 0; i < maxPoints; i++) {
+		const idx = Math.round(i * step);
+		const val = data.at(idx);
+		if (val !== undefined) result.push(val);
+	}
+	return result;
+}
+
+/**
+ * Build an ASCII chart of WPM over time using asciichart.
+ * Returns empty string when there are fewer than 2 data points.
+ */
+export function buildWpmChart(wpmHistory: number[]): string {
+	if (wpmHistory.length < 2) return "";
+	const downsampled = downsample(wpmHistory, 30);
+	return asciichart.plot(downsampled, { height: 6 });
+}
+
 function padCenter(s: string, width: number): string {
 	const pad = Math.max(0, width - s.length);
 	const left = Math.floor(pad / 2);
@@ -148,7 +174,13 @@ function padCenter(s: string, width: number): string {
 	return " ".repeat(left) + s + " ".repeat(right);
 }
 
-export function buildResults(result: SessionResult): StyledText {
+export function buildResults(
+	result: SessionResult,
+	wpmHistory: number[] = [],
+): StyledText {
+	const chartString = buildWpmChart(wpmHistory);
+	const chartLines = chartString ? chartString.split("\n") : [];
+
 	const lines: string[] = [
 		"— Results —",
 		"",
@@ -157,9 +189,18 @@ export function buildResults(result: SessionResult): StyledText {
 		`Accuracy:   ${result.accuracy}%`,
 		`Chars:      ${result.correctChars} / ${result.totalChars}`,
 		`Errors:     ${result.errors}`,
-		"",
-		"Tab: Restart · Esc: Menu · Ctrl+C: Quit",
 	];
+
+	if (chartLines.length > 1) {
+		lines.push("");
+		lines.push("WPM over time:");
+		for (const chartLine of chartLines) {
+			lines.push(chartLine);
+		}
+	}
+
+	lines.push("");
+	lines.push("Tab: Restart · Esc: Menu · Ctrl+C: Quit");
 
 	const contentWidth = Math.max(...lines.map((l) => l.length), 20);
 

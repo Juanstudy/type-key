@@ -176,12 +176,44 @@ describe("buildResults", () => {
 			totalChars: 110,
 			errors: 10,
 		};
-		const output = buildResults(result);
+		const output = buildResults(result, []);
 		expect(output).toBeInstanceOf(StyledText);
 		const text = chunkText(output.chunks);
 		expect(text).toContain("45");
 		expect(text).toContain("92.5");
 		expect(text).toContain("10");
+	});
+
+	it("should include chart when wpmHistory is provided", async () => {
+		const { buildResults } = await import("./screens");
+		const result: SessionResult = {
+			wpm: 45,
+			rawWpm: 50,
+			accuracy: 92.5,
+			correctChars: 100,
+			totalChars: 110,
+			errors: 10,
+		};
+		const output = buildResults(result, [30, 40, 45, 50, 45, 55, 60]);
+		expect(output).toBeInstanceOf(StyledText);
+		const text = chunkText(output.chunks);
+		expect(text).toContain("WPM over time");
+	});
+
+	it("should not include chart when wpmHistory is empty", async () => {
+		const { buildResults } = await import("./screens");
+		const result: SessionResult = {
+			wpm: 45,
+			rawWpm: 50,
+			accuracy: 92.5,
+			correctChars: 100,
+			totalChars: 110,
+			errors: 10,
+		};
+		const output = buildResults(result, []);
+		expect(output).toBeInstanceOf(StyledText);
+		const text = chunkText(output.chunks);
+		expect(text).not.toContain("WPM over time");
 	});
 
 	it("should handle zero values", async () => {
@@ -194,7 +226,7 @@ describe("buildResults", () => {
 			totalChars: 0,
 			errors: 0,
 		};
-		const output = buildResults(result);
+		const output = buildResults(result, []);
 		expect(output).toBeInstanceOf(StyledText);
 		const text = chunkText(output.chunks);
 		expect(text).toContain("0");
