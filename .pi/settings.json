@@ -5,25 +5,25 @@
 				"model": "crofai/deepseek-v4-flash"
 			},
 			"delegate": {
-				"model": "crofai/deepseek-v4-flash"
+				"model": "crofai/glm-5.1"
 			},
 			"oracle": {
 				"model": "crofai/deepseek-v4-flash"
 			},
 			"planner": {
-				"model": "crofai/deepseek-v4-flash"
+				"model": "crofai/kimi-k2.6"
 			},
 			"researcher": {
 				"model": "crofai/deepseek-v4-flash"
 			},
 			"reviewer": {
-				"model": "crofai/deepseek-v4-flash"
+				"model": "crofai/kimi-k2.5"
 			},
 			"scout": {
 				"model": "crofai/deepseek-v4-flash"
 			},
 			"worker": {
-				"model": "crofai/deepseek-v4-flash"
+				"model": "crofai/mimo-v2.5-pro"
 			}
 		}
 	}

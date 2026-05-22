@@ -1,7 +1,7 @@
 ---
 name: sdd-apply
 description: Implement SDD tasks with strict TDD evidence and review workload guard.
-model: crofai/deepseek-v4-pro-precision
+model: crofai/mimo-v2.5-pro
 tools: read, grep, glob, edit, write, bash
 inheritProjectContext: true
 ---

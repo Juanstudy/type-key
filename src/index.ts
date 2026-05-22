@@ -1,6 +1,14 @@
 import { createCliRenderer, Text, ASCIIFont } from "@opentui/core";
 import type { CliRenderer } from "@opentui/core";
 import type { ScreenName, TimeOption } from "./lib/types";
+import type { StoredSession, SessionAggregates } from "./lib/types";
+import {
+	initDB,
+	saveSession,
+	getSessions,
+	getSession,
+	getAggregates,
+} from "./lib/db";
 import { TypingEngine } from "./engine/typing";
 
 import { Timer } from "./engine/timer";
@@ -11,6 +19,9 @@ import {
 	buildMenu,
 	buildGame,
 	buildResults,
+	buildHistory,
+	buildEmptyHistory,
+	buildHistoryDetail,
 	type SessionResult,
 } from "./screens";
 
@@ -36,6 +47,12 @@ const state: {
 	gameStarted: boolean;
 	elapsedSeconds: number;
 	wpmHistory: number[];
+	historyPage: number;
+	historyTotalPages: number;
+	historySelectedIndex: number;
+	historySessions: StoredSession[];
+	historyAggregates: SessionAggregates | null;
+	historyDetailSession: StoredSession | null;
 } = {
 	screen: "menu",
 	mode: "time",
@@ -50,6 +67,12 @@ const state: {
 	gameStarted: false,
 	elapsedSeconds: 0,
 	wpmHistory: [],
+	historyPage: 0,
+	historyTotalPages: 1,
+	historySelectedIndex: 0,
+	historySessions: [],
+	historyAggregates: null,
+	historyDetailSession: null,
 };
 
 const wpmCalc = new WPMCalculator();
@@ -103,6 +126,12 @@ function goMenu(): void {
 	state.liveRawWpm = 0;
 	state.elapsedSeconds = 0;
 	state.wpmHistory = [];
+	state.historyPage = 0;
+	state.historyTotalPages = 1;
+	state.historySelectedIndex = 0;
+	state.historySessions = [];
+	state.historyAggregates = null;
+	state.historyDetailSession = null;
 	removeTitleFont();
 	addTitleFont();
 	show(buildMenu(state.mode, getMenuSelectedIndex(), getMenuOptions()));
@@ -186,6 +215,31 @@ function goResults(): void {
 			totalChars: gs.totalChars,
 			errors: gs.errors,
 		};
+
+		// Save session to history
+		const ts = new Date().toISOString();
+		const timeOpt =
+			state.mode === "time"
+				? (TIME_OPTIONS[state.selectedTimeIndex] ?? 30)
+				: null;
+		const wordCnt =
+			state.mode === "words"
+				? (WORD_COUNT_OPTIONS[state.selectedWordCountIndex] ?? 50)
+				: null;
+		saveSession({
+			timestamp: ts,
+			mode: state.mode,
+			timeOption: timeOpt,
+			wordCount: wordCnt,
+			wpm: state.result.wpm,
+			rawWpm: state.result.rawWpm,
+			accuracy: state.result.accuracy,
+			correctChars: state.result.correctChars,
+			totalChars: state.result.totalChars,
+			errors: state.result.errors,
+			durationSeconds: state.elapsedSeconds,
+			wpmHistory: state.wpmHistory,
+		});
 	}
 	removeTitleFont();
 	show(buildResults(state.result!, state.wpmHistory));
@@ -205,6 +259,45 @@ function updateLiveWpm(): void {
 	state.liveWpm = stats.grossWPM;
 	state.liveRawWpm = stats.rawWPM;
 	state.wpmHistory.push(stats.grossWPM);
+}
+
+// ── History screen ────────────────────────────────────────────────────────
+
+function goHistory(): void {
+	state.screen = "history";
+	state.historyPage = 0;
+	state.historySelectedIndex = 0;
+	state.historySessions = getSessions(10, 0);
+	state.historyAggregates = getAggregates();
+
+	const totalSessions = state.historyAggregates?.totalSessions ?? 0;
+	state.historyTotalPages = Math.max(1, Math.ceil(totalSessions / 10));
+
+	removeTitleFont();
+	if (state.historySessions.length === 0) {
+		show(buildEmptyHistory());
+	} else {
+		show(
+			buildHistory(
+				state.historySessions,
+				state.historyAggregates!,
+				state.historyPage,
+				state.historyTotalPages,
+				state.historySelectedIndex,
+			),
+		);
+	}
+}
+
+function goHistoryDetail(sessionId: number): void {
+	state.screen = "history-detail";
+	state.historyDetailSession = getSession(sessionId);
+	if (!state.historyDetailSession) {
+		goHistory();
+		return;
+	}
+	removeTitleFont();
+	show(buildHistoryDetail(state.historyDetailSession));
 }
 
 // ── Keyboard handling ─────────────────────────────────────────────────────
@@ -252,6 +345,8 @@ function handleKey(key: KeyEvent): void {
 				show(buildMenu(state.mode, getMenuSelectedIndex(), getMenuOptions()));
 			} else if (key.name === "return" || key.name === "enter") {
 				goGame();
+			} else if (key.name === "h") {
+				goHistory();
 			}
 			break;
 
@@ -296,6 +391,66 @@ function handleKey(key: KeyEvent): void {
 				goMenu();
 			}
 			break;
+
+		case "history":
+			if (key.name === "escape") {
+				goMenu();
+			} else if (key.name === "up") {
+				state.historySelectedIndex = Math.max(
+					0,
+					state.historySelectedIndex - 1,
+				);
+				show(
+					buildHistory(
+						state.historySessions,
+						state.historyAggregates!,
+						state.historyPage,
+						state.historyTotalPages,
+						state.historySelectedIndex,
+					),
+				);
+			} else if (key.name === "down") {
+				state.historySelectedIndex = Math.min(
+					state.historySessions.length - 1,
+					state.historySelectedIndex + 1,
+				);
+				show(
+					buildHistory(
+						state.historySessions,
+						state.historyAggregates!,
+						state.historyPage,
+						state.historyTotalPages,
+						state.historySelectedIndex,
+					),
+				);
+			} else if (key.name === "return" || key.name === "enter") {
+				const selected = state.historySessions[state.historySelectedIndex];
+				if (selected) goHistoryDetail(selected.id);
+			}
+			break;
+
+		case "history-detail":
+			if (key.name === "escape") {
+				goHistory();
+			} else if (key.name === "tab") {
+				const s = state.historyDetailSession;
+				if (s) {
+					state.mode = s.mode;
+					if (s.mode === "time" && s.timeOption !== null) {
+						const idx = TIME_OPTIONS.indexOf(
+							s.timeOption as (typeof TIME_OPTIONS)[number],
+						);
+						if (idx >= 0) state.selectedTimeIndex = idx;
+					} else if (s.mode === "words" && s.wordCount !== null) {
+						const idx = WORD_COUNT_OPTIONS.indexOf(
+							s.wordCount as (typeof WORD_COUNT_OPTIONS)[number],
+						);
+						if (idx >= 0) state.selectedWordCountIndex = idx;
+					}
+					goGame();
+				}
+			}
+			break;
 	}
 }
 
@@ -319,6 +474,7 @@ async function main(): Promise<void> {
 
 	process.on("SIGINT", handleQuit);
 
+	initDB();
 	goMenu();
 }
 

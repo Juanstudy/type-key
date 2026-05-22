@@ -25,6 +25,34 @@ export interface GameConfig {
 	language: Language;
 }
 
-// SessionResult is defined locally in index.ts — exported type removed until history screen is built
+export interface StoredSession {
+	id: number;
+	timestamp: string;
+	mode: "time" | "words";
+	timeOption: number | null;
+	wordCount: number | null;
+	wpm: number;
+	rawWpm: number;
+	accuracy: number;
+	correctChars: number;
+	totalChars: number;
+	errors: number;
+	durationSeconds: number;
+	wpmHistory: number[];
+}
 
-export type ScreenName = "menu" | "game" | "results";
+export type NewSession = Omit<StoredSession, "id">;
+
+export interface SessionAggregates {
+	bestWpm: number;
+	avgWpm: number;
+	avgAccuracy: number;
+	totalSessions: number;
+}
+
+export type ScreenName =
+	| "menu"
+	| "game"
+	| "results"
+	| "history"
+	| "history-detail";

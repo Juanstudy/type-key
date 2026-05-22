@@ -1,7 +1,7 @@
 ---
 name: sdd-proposal
 description: Write an SDD proposal for an approved change idea.
-model: crofai/glm-5
+model: crofai/kimi-k2.6
 tools: read, grep, glob, write, edit
 inheritProjectContext: true
 ---

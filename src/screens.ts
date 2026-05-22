@@ -1,4 +1,9 @@
-import type { Letter, Word } from "./lib/types";
+import type {
+	Letter,
+	Word,
+	StoredSession,
+	SessionAggregates,
+} from "./lib/types";
 import wordlist from "./data/wordlists/english.json";
 import { StyledText, stringToStyledText } from "@opentui/core";
 import type { TextChunk } from "@opentui/core";
@@ -99,8 +104,9 @@ export function buildMenu(
 
 	// Hints
 	chunks.push(
-		...stringToStyledText("\n← → Mode · ↑↓ Option · Enter Start · Ctrl+C Quit")
-			.chunks,
+		...stringToStyledText(
+			"\n← → Mode · ↑↓ Option · Enter Start · H History · Ctrl+C Quit",
+		).chunks,
 	);
 
 	return new StyledText(chunks);
@@ -231,5 +237,217 @@ export function buildResults(
 	// Bottom border
 	chunks.push(colored("└" + "─".repeat(contentWidth + 2) + "┘", HEADER_FG));
 
+	return new StyledText(chunks);
+}
+
+/** Format a session's mode and option as a short string like "time 30s" or "words 50" */
+function formatModeOption(session: StoredSession): string {
+	if (session.mode === "time" && session.timeOption !== null) {
+		return `time ${session.timeOption}s`;
+	}
+	if (session.mode === "words" && session.wordCount !== null) {
+		return `words ${session.wordCount}`;
+	}
+	return session.mode;
+}
+
+/** Format session date as YYYY-MM-DD */
+function formatDate(iso: string): string {
+	return iso.slice(0, 10);
+}
+
+/**
+ * Build the history screen with stats header and paginated session list.
+ */
+export function buildHistory(
+	sessions: StoredSession[],
+	aggregates: SessionAggregates,
+	page: number,
+	totalPages: number,
+	selectedIndex: number,
+): StyledText {
+	const lines: string[] = [];
+
+	// Title
+	lines.push("— History —");
+	lines.push("");
+
+	// Stats header
+	lines.push(
+		`Best: ${aggregates.bestWpm} WPM   Avg: ${aggregates.avgWpm} WPM  ${aggregates.avgAccuracy}%`,
+	);
+	lines.push(`${aggregates.totalSessions} sessions`);
+	lines.push("");
+
+	// Session rows
+	if (sessions.length === 0) {
+		lines.push("No sessions yet.");
+		lines.push("Complete a typing test to see");
+		lines.push("your history here.");
+	} else {
+		for (let i = 0; i < sessions.length; i++) {
+			const s = sessions[i]!;
+			const prefix = i === selectedIndex ? "▸" : " ";
+			const modeStr = formatModeOption(s);
+			const dateStr = formatDate(s.timestamp);
+			lines.push(
+				`${prefix}#${s.id}  ${Math.round(s.wpm)} WPM  ${modeStr}  ${dateStr}`,
+			);
+		}
+	}
+
+	lines.push("");
+
+	// Footer
+	if (sessions.length > 0) {
+		lines.push(`Page ${page}/${totalPages}   ↑↓ Navigate  Enter View`);
+	}
+	lines.push("Esc: Menu · Ctrl+C: Quit");
+
+	const contentWidth = Math.max(...lines.map((l) => l.length), 20);
+	const chunks: TextChunk[] = [];
+
+	// Top border
+	chunks.push(colored("┌" + "─".repeat(contentWidth + 2) + "┐\n", HEADER_FG));
+
+	for (let i = 0; i < lines.length; i++) {
+		const line = lines[i]!;
+		const isTitle = i === 0;
+		const isSpacer = line === "";
+
+		// Check if this is a session row that is selected
+		const isSelectedRow =
+			sessions.length > 0 && i >= 6 && i < 6 + sessions.length;
+		const isActuallySelected = isSelectedRow && i - 6 === selectedIndex;
+
+		const padded = " " + padCenter(line, contentWidth) + " ";
+		if (isTitle) {
+			chunks.push(colored("│", HEADER_FG));
+			chunks.push(colored(padded, SELECTED_FG));
+			chunks.push(colored("│\n", HEADER_FG));
+		} else if (isSpacer) {
+			chunks.push(
+				colored("│" + " ".repeat(contentWidth + 2) + "│\n", HEADER_FG),
+			);
+		} else if (isActuallySelected) {
+			chunks.push(colored("│", HEADER_FG));
+			chunks.push(colored(padded, SELECTED_FG));
+			chunks.push(colored("│\n", HEADER_FG));
+		} else {
+			chunks.push(colored("│", HEADER_FG));
+			chunks.push(...stringToStyledText(padded).chunks);
+			chunks.push(colored("│\n", HEADER_FG));
+		}
+	}
+
+	// Bottom border
+	chunks.push(colored("└" + "─".repeat(contentWidth + 2) + "┘", HEADER_FG));
+
+	return new StyledText(chunks);
+}
+
+/**
+ * Build the empty history screen (no sessions saved yet).
+ */
+export function buildEmptyHistory(): StyledText {
+	const lines: string[] = [
+		"— History —",
+		"",
+		"No sessions yet.",
+		"Complete a typing test to see",
+		"your history here.",
+		"",
+		"Esc: Menu · Ctrl+C: Quit",
+	];
+
+	const contentWidth = Math.max(...lines.map((l) => l.length), 20);
+	const chunks: TextChunk[] = [];
+
+	chunks.push(colored("┌" + "─".repeat(contentWidth + 2) + "┐\n", HEADER_FG));
+
+	for (let i = 0; i < lines.length; i++) {
+		const line = lines[i]!;
+		const isTitle = i === 0;
+		const isSpacer = line === "";
+		const padded = " " + padCenter(line, contentWidth) + " ";
+
+		if (isTitle) {
+			chunks.push(colored("│", HEADER_FG));
+			chunks.push(colored(padded, SELECTED_FG));
+			chunks.push(colored("│\n", HEADER_FG));
+		} else if (isSpacer) {
+			chunks.push(
+				colored("│" + " ".repeat(contentWidth + 2) + "│\n", HEADER_FG),
+			);
+		} else {
+			chunks.push(colored("│", HEADER_FG));
+			chunks.push(...stringToStyledText(padded).chunks);
+			chunks.push(colored("│\n", HEADER_FG));
+		}
+	}
+
+	chunks.push(colored("└" + "─".repeat(contentWidth + 2) + "┘", HEADER_FG));
+	return new StyledText(chunks);
+}
+
+/**
+ * Build the session detail screen, reusing stats layout and WPM chart.
+ */
+export function buildHistoryDetail(session: StoredSession): StyledText {
+	const modeStr = formatModeOption(session);
+	const dateStr = formatDate(session.timestamp);
+	const chartString = buildWpmChart(session.wpmHistory);
+	const chartLines = chartString ? chartString.split("\n") : [];
+
+	const lines: string[] = [
+		`— Session #${session.id} —`,
+		"",
+		`${dateStr} · ${modeStr} · ${session.durationSeconds}s`,
+		"",
+		`WPM:        ${Math.round(session.wpm)}`,
+		`Raw WPM:    ${Math.round(session.rawWpm)}`,
+		`Accuracy:   ${session.accuracy}%`,
+		`Chars:      ${session.correctChars} / ${session.totalChars}`,
+		`Errors:     ${session.errors}`,
+	];
+
+	if (chartLines.length > 1) {
+		lines.push("");
+		lines.push("WPM over time:");
+		for (const chartLine of chartLines) {
+			lines.push(chartLine);
+		}
+	}
+
+	lines.push("");
+	lines.push("Tab: Re-run · Esc: History · Ctrl+C: Quit");
+
+	const contentWidth = Math.max(...lines.map((l) => l.length), 20);
+	const chunks: TextChunk[] = [];
+
+	chunks.push(colored("┌" + "─".repeat(contentWidth + 2) + "┐\n", HEADER_FG));
+
+	for (let i = 0; i < lines.length; i++) {
+		const line = lines[i]!;
+		const isTitle = i === 0;
+		const isSpacer = line === "";
+		const padded = " " + padCenter(line, contentWidth) + " ";
+
+		if (isTitle) {
+			chunks.push(colored("│", HEADER_FG));
+			chunks.push(colored(padded, SELECTED_FG));
+			chunks.push(colored("│\n", HEADER_FG));
+		} else if (isSpacer) {
+			chunks.push(
+				colored("│" + " ".repeat(contentWidth + 2) + "│\n", HEADER_FG),
+			);
+		} else {
+			chunks.push(colored("│", HEADER_FG));
+			chunks.push(...stringToStyledText(padded).chunks);
+			chunks.push(colored("│\n", HEADER_FG));
+		}
+	}
+
+	chunks.push(colored("└" + "─".repeat(contentWidth + 2) + "┘", HEADER_FG));
 	return new StyledText(chunks);
 }
