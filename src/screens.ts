@@ -272,11 +272,20 @@ export function buildHistory(
 	lines.push("— History —");
 	lines.push("");
 
-	// Stats header
+	// Stats header — overall stats
+	const totalMin = Math.floor(aggregates.totalTimeSeconds / 60);
+	const totalSec = aggregates.totalTimeSeconds % 60;
+	const totalTimeStr =
+		totalMin > 0 ? `${totalMin}m ${totalSec}s` : `${totalSec}s`;
+
+	lines.push(`Best:   ${aggregates.bestWpm} WPM  ·  Acc: ${aggregates.bestAccuracy}%`);
 	lines.push(
-		`Best: ${aggregates.bestWpm} WPM   Avg: ${aggregates.avgWpm} WPM  ${aggregates.avgAccuracy}%`,
+		`Avg:    ${aggregates.avgWpm} WPM  ·  Raw: ${aggregates.avgRawWpm} WPM  ·  Acc: ${aggregates.avgAccuracy}%`,
 	);
-	lines.push(`${aggregates.totalSessions} sessions`);
+	lines.push(`Avg duration: ${aggregates.avgDuration}s  ·  Avg errors: ${aggregates.avgErrors}`);
+	lines.push(
+		`${aggregates.totalSessions} sessions  ·  Total time: ${totalTimeStr}`,
+	);
 	lines.push("");
 
 	// Session rows

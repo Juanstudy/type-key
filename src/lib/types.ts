@@ -45,9 +45,14 @@ export type NewSession = Omit<StoredSession, "id">;
 
 export interface SessionAggregates {
 	bestWpm: number;
+	bestAccuracy: number;
 	avgWpm: number;
+	avgRawWpm: number;
 	avgAccuracy: number;
+	avgDuration: number;
+	avgErrors: number;
 	totalSessions: number;
+	totalTimeSeconds: number;
 }
 
 export type ScreenName =

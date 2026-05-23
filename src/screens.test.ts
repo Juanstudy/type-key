@@ -28,9 +28,14 @@ function makeAggregates(
 ): SessionAggregates {
 	return {
 		bestWpm: 82,
+		bestAccuracy: 93.2,
 		avgWpm: 45,
+		avgRawWpm: 50,
 		avgAccuracy: 92.5,
+		avgDuration: 30,
+		avgErrors: 10,
 		totalSessions: 10,
+		totalTimeSeconds: 300,
 		...overrides,
 	};
 }
@@ -274,10 +279,15 @@ describe("buildHistory", () => {
 		const output = buildHistory(sessions, agg, 1, 1, 0);
 		expect(output).toBeInstanceOf(StyledText);
 		const text = chunkText(output.chunks);
-		expect(text).toContain("Best: 82 WPM");
-		expect(text).toContain("Avg: 45 WPM");
-		expect(text).toContain("92.5%");
+		expect(text).toContain("Best:   82 WPM");
+		expect(text).toContain("Acc: 93.2%");
+		expect(text).toContain("Avg:    45 WPM");
+		expect(text).toContain("Raw: 50 WPM");
+		expect(text).toContain("Acc: 92.5%");
+		expect(text).toContain("Avg duration: 30s");
+		expect(text).toContain("Avg errors: 10");
 		expect(text).toContain("10 sessions");
+		expect(text).toContain("Total time: 5m 0s");
 	});
 
 	it("should render session rows with correct data", async () => {

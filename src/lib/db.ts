@@ -155,24 +155,41 @@ export function getSession(id: number): StoredSession | null {
 export function getAggregates(): SessionAggregates {
 	const database = getDB();
 
-	const bestRow = database
-		.query(`SELECT COALESCE(MAX(wpm), 0) as bestWpm FROM sessions`)
-		.get() as { bestWpm: number };
-
-	const last10Row = database
-		.query(
-			`SELECT COALESCE(AVG(wpm), 0) as avgWpm, COALESCE(AVG(accuracy), 0) as avgAccuracy FROM (SELECT * FROM sessions ORDER BY timestamp DESC LIMIT 10)`,
-		)
-		.get() as { avgWpm: number; avgAccuracy: number };
-
-	const countRow = database
-		.query(`SELECT COUNT(*) as totalSessions FROM sessions`)
-		.get() as { totalSessions: number };
+	const row = database
+		.query(`
+			SELECT
+				COALESCE(MAX(wpm), 0) as bestWpm,
+				COALESCE(MAX(accuracy), 0) as bestAccuracy,
+				COALESCE(AVG(wpm), 0) as avgWpm,
+				COALESCE(AVG(raw_wpm), 0) as avgRawWpm,
+				COALESCE(AVG(accuracy), 0) as avgAccuracy,
+				COALESCE(AVG(duration_seconds), 0) as avgDuration,
+				COALESCE(AVG(errors), 0) as avgErrors,
+				COUNT(*) as totalSessions,
+				COALESCE(SUM(duration_seconds), 0) as totalTimeSeconds
+			FROM sessions
+		`)
+		.get() as {
+		bestWpm: number;
+		bestAccuracy: number;
+		avgWpm: number;
+		avgRawWpm: number;
+		avgAccuracy: number;
+		avgDuration: number;
+		avgErrors: number;
+		totalSessions: number;
+		totalTimeSeconds: number;
+	};
 
 	return {
-		bestWpm: bestRow.bestWpm,
-		avgWpm: Math.round(last10Row.avgWpm * 10) / 10,
-		avgAccuracy: Math.round(last10Row.avgAccuracy * 10) / 10,
-		totalSessions: countRow.totalSessions,
+		bestWpm: Math.round(row.bestWpm),
+		bestAccuracy: Math.round(row.bestAccuracy * 10) / 10,
+		avgWpm: Math.round(row.avgWpm * 10) / 10,
+		avgRawWpm: Math.round(row.avgRawWpm * 10) / 10,
+		avgAccuracy: Math.round(row.avgAccuracy * 10) / 10,
+		avgDuration: Math.round(row.avgDuration * 10) / 10,
+		avgErrors: Math.round(row.avgErrors * 10) / 10,
+		totalSessions: row.totalSessions,
+		totalTimeSeconds: row.totalTimeSeconds,
 	};
 }
