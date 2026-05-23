@@ -2,6 +2,7 @@
 name: sdd-explore
 description: Explore an SDD change idea before proposal.
 model: crofai/glm-5.1
+thinking: medium
 tools: read, grep, glob, webfetch
 inheritProjectContext: true
 ---

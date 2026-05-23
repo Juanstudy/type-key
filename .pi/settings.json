@@ -2,7 +2,8 @@
 	"subagents": {
 		"agentOverrides": {
 			"context-builder": {
-				"model": "crofai/deepseek-v4-flash"
+				"model": "crofai/deepseek-v4-flash",
+				"thinking": "high"
 			},
 			"delegate": {
 				"model": "crofai/glm-5.1"
@@ -23,7 +24,8 @@
 				"model": "crofai/deepseek-v4-flash"
 			},
 			"worker": {
-				"model": "crofai/mimo-v2.5-pro"
+				"model": "crofai/mimo-v2.5-pro",
+				"thinking": "high"
 			}
 		}
 	}
