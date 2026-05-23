@@ -29,9 +29,7 @@ El cambio a Bun + OpenTUI (desde el stack original Node + Ink 5) responde a tres
 
 - Autenticación y cuentas de usuario.
 - Sincronización multidispositivo.
-- Temas visuales (queda preparada la arquitectura, implementación posterior).
 - Modo multijugador.
-- Soporte de snippets de código como modo de juego.
 
 ---
 
@@ -396,49 +394,36 @@ type SessionResult = {
 
 ---
 
-## 12. Plan de desarrollo por fases
+## 12. Estado actual vs plan original
 
-### Fase 1 — Setup + Core del juego (semana 1)
+### ✅ Completado
 
-- [ ] Setup del proyecto (Bun + TypeScript + @opentui/core)
-- [ ] `engine/typing.ts`: estados de letras, detección de errores, navegación entre palabras
-- [ ] `engine/timer.ts`: countdown para modo tiempo
-- [ ] `ui/word-display.ts`: render de palabras con colores correctos (Text + Box de OpenTUI)
-- [ ] Modo tiempo funcional end-to-end (sin menú, config hardcodeada en index.ts)
-- [ ] `src/index.ts`: entry point con renderer, screen router básico
+- Setup del proyecto (Bun + TypeScript + @opentui/core)
+- `engine/typing.ts`: estados de letras, detección de errores, navegación entre palabras
+- `engine/timer.ts`: countdown para modo tiempo
+- `engine/wpm.ts`: cálculo de WPM y accuracy
+- Modo tiempo funcional (15s · 30s · 60s · 120s)
+- Modo palabras (10 · 25 · 50 · 100)
+- Menú con selección de modo y opciones
+- Pantalla de resultados con estadísticas completas
+- Gráfica WPM-over-time en resultados (asciichart)
+- Navegación entre pantallas (Tab reinicia, Esc menú)
+- `lib/db.ts`: guardado de resultados en SQLite con bun:sqlite
+- Historial con stats globales, desglose por modo, trend chart
+- Detalle de sesión con resultados + chart
+- 115 tests unitarios (strict TDD)
+- Typecheck estricto
 
-### Fase 2 — Modos y pantallas (semana 2)
+### 🔜 Pendiente
 
-- [ ] Modo palabras
-- [ ] Modo citas (con colección inicial de 50 citas en inglés y español)
-- [ ] `screens/results.ts`: pantalla de resultados con estadísticas completas
-- [ ] `screens/menu.ts`: menú de selección de modo y configuración
-- [ ] Navegación entre pantallas (Tab para reiniciar, Esc para menú)
-
-### Fase 3 — Persistencia e historial (semana 3)
-
-- [ ] `lib/config.ts`: config persistente con Bun.file
-- [ ] `lib/db.ts`: guardado de resultados en SQLite con bun:sqlite
-- [ ] `screens/history.ts`: pantalla de historial con gráfica de WPM (asciichart)
-- [ ] Stats agregadas (mejor WPM, promedio, total de sesiones)
-- [ ] Comparación vs promedio en pantalla de resultados
-
-### Fase 4 — Distribución y pulido (semana 4)
-
-- [ ] CLI flags (`--time`, `--words`, `--quotes`, `--lang`, `--history`)
-- [ ] Manejo de errores y edge cases (terminal muy pequeña, interrupción con Ctrl+C)
-- [ ] BUILD.md con instrucciones completas
-- [ ] README completo con GIF demo
-- [ ] Publicación en npm (`bun publish`)
-- [ ] Build de binarios con `bun build --compile` para Linux/Mac
-
-### Deuda técnica / features futuras (post-MVP)
-
-- Sistema de temas (Dracula, Nord, Catppuccin, Monkeytype default...)
+- Modo citas (colección local)
+- CLI flags (`--time`, `--words`, `--quotes`, `--lang`, `--history`)
+- Publicación en npm (`bun publish`)
+- Build de binarios con `bun build --compile`
+- Sistema de temas (Dracula, Nord, Catppuccin...)
 - Wordlists custom por archivo
 - Modo código (snippets de JS, Python, etc.)
-- Gráfica en tiempo real del WPM durante la sesión
-- Tests unitarios del engine (`bun test`)
+- Comparación vs promedio en pantalla de resultados
 
 ---
 

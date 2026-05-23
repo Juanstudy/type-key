@@ -8,24 +8,30 @@ Monkeyterm es un test de mecanografía que corre completamente en tu terminal. I
 
 Construido con **Bun** + **OpenTUI** (core Zig nativo) para máxima velocidad y mínimo overhead.
 
+Los resultados de cada sesión se guardan automáticamente en **SQLite** (`~/.local/share/type-key/type-key.db`) y podés verlos en el historial con stats globales, desglose por modo y gráfica de tendencia.
+
 ---
 
 ## ✨ Features
 
 | Modo          | Descripción                                                | Estado |
 | ------------- | ---------------------------------------------------------- | ------ |
-| ⏱️ **Time**   | Escribí palabras contra reloj: 15s · 30s · 60s · 120s      | ✅ MVP |
-| 📝 **Words**  | Completá una cantidad fija de palabras: 10 · 25 · 50 · 100 | 🔜     |
+| ⏱️ **Time**   | Escribí palabras contra reloj: 15s · 30s · 60s · 120s      | ✅     |
+| 📝 **Words**  | Completá una cantidad fija de palabras: 10 · 25 · 50 · 100 | ✅     |
 | 📖 **Quotes** | Escribí citas completas de una colección local             | 🔜     |
 
-| Funcionalidad                        | Estado |
-| ------------------------------------ | ------ |
-| 🎮 Menú + navegación por flechas     | ✅     |
-| 📊 WPM en tiempo real                | ✅     |
-| 🎯 Accuracy + errores                | ✅     |
-| ⌨️ Backspace borra última letra      | ✅     |
-| 🔄 Tab reinicia, Esc vuelve al menú  | ✅     |
-| 🌙 Offline, sin cuenta, sin tracking | ✅     |
+| Funcionalidad                               | Estado |
+| ------------------------------------------- | ------ |
+| 🎮 Menú + navegación por flechas            | ✅     |
+| 📊 WPM en tiempo real                       | ✅     |
+| 📈 Gráfica WPM en resultados                | ✅     |
+| 🎯 Accuracy + errores                       | ✅     |
+| ⌨️ Backspace borra última letra             | ✅     |
+| 🔄 Tab reinicia, Esc vuelve al menú         | ✅     |
+| 🗄️ Historial persistente con SQLite        | ✅     |
+| 📊 Historial con stats globales + trend     | ✅     |
+| 🏷️ Stats separadas por modo (Time / Words)  | ✅     |
+| 🌙 Offline, sin cuenta, sin tracking        | ✅     |
 
 ---
 
@@ -61,29 +67,37 @@ bun build ./src/index.ts --compile --outfile monkeyterm
 ## 🎮 Cómo se usa
 
 ```
-                    ┌─────────────────────────────────────┐
-                    │           monkeyterm                │
-                    │                                     │
-                    │  tiempo:  {15}  [30s]  60  120      │
-                    │                                     │
-                    │  [↑↓] navegar  [enter] comenzar     │
-                    └─────────────────────────────────────┘
+┌─────────────────────────────────────┐
+│           monkeyterm                │
+│                                     │
+│  Time            ·  Words           │
+│                                     │
+│  ▸ 30s                              │
+│    60s                              │
+│    120s                             │
+│                                     │
+│  ← → Mode · ↑↓ Option · Enter      │
+│  H History · Ctrl+C Quit            │
+└─────────────────────────────────────┘
 ```
 
-1. **Menú principal** — navegás con ↑↓, seleccionás tiempo y Enter para empezar.
+1. **Menú principal** — ← → cambiás entre Time y Words, ↑↓ seleccionás opción, Enter empezás.
 2. **Juego** — el timer arranca con la primera tecla. WPM en vivo, letras coloreadas por estado.
-3. **Resultados** — WPM, accuracy, caracteres, errores. Tab para reiniciar, Esc para menú.
+3. **Resultados** — WPM, accuracy, caracteres, errores, y **gráfica de WPM durante la sesión**.
+4. **Historial** — presioná `H` en el menú para ver stats globales, trend chart y lista de sesiones.
 
 ### Controles
 
-| Tecla       | Acción                   |
-| ----------- | ------------------------ |
-| `Backspace` | Borra última letra       |
-| `↑ ↓`       | Navegar opciones (menú)  |
-| `Enter`     | Empezar test             |
-| `Tab`       | Reinicia el test         |
-| `Esc`       | Vuelve al menú principal |
-| `Ctrl + C`  | Sale de la app           |
+| Tecla       | Acción                              |
+| ----------- | ----------------------------------- |
+| `Backspace` | Borra última letra                  |
+| `← →`       | Cambiar modo (Time / Words)         |
+| `↑ ↓`       | Navegar opciones / sesiones         |
+| `H`         | Abrir historial (desde el menú)     |
+| `Enter`     | Empezar test / ver detalle          |
+| `Tab`       | Reinicia el test / re-ejecutar      |
+| `Esc`       | Vuelve al menú principal / atrás    |
+| `Ctrl + C`  | Sale de la app                      |
 
 ---
 
@@ -113,23 +127,29 @@ OpenTUI ofrece dos caminos: el Core imperativo (`@opentui/core`) y el reconciler
 ```
 monkeyterm/
 ├── src/
-│   ├── engine/          # Lógica central (typing engine, timer, wpm)
-│   │   ├── typing.ts    # Motor de tipeo con estados de letra
-│   │   ├── timer.ts     # Timer con callbacks
-│   │   ├── wpm.ts       # Cálculo de WPM y accuracy
-│   │   └── *.test.ts    # Tests unitarios (strict TDD)
+│   ├── engine/              # Lógica central (typing engine, timer, wpm)
+│   │   ├── typing.ts        # Motor de tipeo con estados de letra
+│   │   ├── timer.ts         # Timer con callbacks
+│   │   ├── wpm.ts           # Cálculo de WPM y accuracy
+│   │   └── *.test.ts        # Tests unitarios (strict TDD)
 │   ├── lib/
-│   │   └── types.ts     # Tipos compartidos (Letter, GameConfig, etc.)
+│   │   ├── types.ts         # Tipos compartidos (Letter, StoredSession, etc.)
+│   │   ├── db.ts            # Wrapper de bun:sqlite (guardar/leer resultados)
+│   │   └── db.test.ts       # Tests de DB
 │   ├── data/
-│   │   └── wordlists/   # Wordlists en JSON
-│   └── index.ts         # Entry point + screens (menu, game, results)
+│   │   └── wordlists/       # Wordlists en JSON
+│   ├── screens.ts           # Todas las screens (menu, game, results, history)
+│   ├── screens.test.ts      # Tests de screens
+│   ├── asciichart.d.ts      # Type declarations para asciichart
+│   └── index.ts             # Entry point + integración
 ├── docs/
-│   ├── PRD.md           # Product Requirements Document
-│   ├── BUILD.md         # Instrucciones de build local
-│   └── AGENTS.md        # Reglas de code review (GGA)
-├── openspec/            # Artefactos SDD
+│   ├── PRD.md               # Product Requirements Document
+│   ├── BUILD.md             # Instrucciones de build local
+│   └── AGENTS.md            # Reglas de code review (GGA)
+├── openspec/                # Artefactos SDD
 ├── package.json
-└── tsconfig.json
+├── tsconfig.json
+└── README.md
 ```
 
 ---
@@ -156,14 +176,26 @@ Ver [`docs/BUILD.md`](docs/BUILD.md) para instrucciones detalladas de setup.
 
 ---
 
-## 🗺️ Roadmap
+## ✅ Features implementadas
 
-- [x] PRD + setup del proyecto
-- [x] **Fase 1**: Core del juego (typing engine, timer, modo tiempo funcional)
-- [ ] **Fase 2**: Modos palabras, citas
-- [ ] **Fase 3**: Persistencia SQLite, historial con gráfica
-- [ ] **Fase 4**: CLI flags, distribución npm + binarios
-- [ ] _Post-MVP_: Temas (Dracula, Nord, Catppuccin), modo código, wordlists custom
+- [x] Modo Time (15s · 30s · 60s · 120s)
+- [x] Words Mode (10 · 25 · 50 · 100 palabras)
+- [x] WPM en tiempo real + accuracy + errores
+- [x] Gráfica WPM-over-time en resultados
+- [x] Historial persistente con SQLite
+- [x] Stats globales: best/avg por modo, trend chart
+- [x] Detalle de sesión con resultados + chart
+- [x] Navegación completa: menú, juego, resultados, historial
+- [x] 115 tests, typecheck strict
+
+## 🗺️ Próximo
+
+- [ ] Modo citas (colección local)
+- [ ] CLI flags (`--time`, `--words`, `--history`)
+- [ ] Distribución npm + binarios
+- [ ] Temas (Dracula, Nord, Catppuccin)
+- [ ] Wordlists custom
+- [ ] Modo código (snippets)
 
 ---
 
