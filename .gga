@@ -18,7 +18,7 @@
 #   PROVIDER="crofai:kimi-k2.6"
 #   PROVIDER="crofai:kimi-k2.6-precision"
 #   PROVIDER="crofai:deepseek-v4-flash"
-PROVIDER="crofai:deepseek-v4-flash"
+PROVIDER="crofai:kimi-k2.6"
 
 # File patterns to include in review (comma-separated)
 # Default: * (all files)
