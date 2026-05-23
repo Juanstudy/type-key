@@ -36,6 +36,9 @@ function makeAggregates(
 		avgErrors: 10,
 		totalSessions: 10,
 		totalTimeSeconds: 300,
+		time: { bestWpm: 82, avgWpm: 45, avgAccuracy: 92.5, sessions: 7 },
+		words: { bestWpm: 78, avgWpm: 40, avgAccuracy: 90.0, sessions: 3 },
+		recentWpms: [30, 40, 50, 60, 55, 70, 82, 75, 80, 78],
 		...overrides,
 	};
 }
@@ -272,22 +275,23 @@ describe("buildResults", () => {
 });
 
 describe("buildHistory", () => {
-	it("should render stats header", async () => {
+	it("should render stats header with mode breakdown", async () => {
 		const { buildHistory } = await import("./screens");
 		const sessions = [makeSession()];
 		const agg = makeAggregates();
 		const output = buildHistory(sessions, agg, 1, 1, 0);
 		expect(output).toBeInstanceOf(StyledText);
 		const text = chunkText(output.chunks);
-		expect(text).toContain("Best:   82 WPM");
-		expect(text).toContain("Acc: 93.2%");
-		expect(text).toContain("Avg:    45 WPM");
-		expect(text).toContain("Raw: 50 WPM");
-		expect(text).toContain("Acc: 92.5%");
-		expect(text).toContain("Avg duration: 30s");
-		expect(text).toContain("Avg errors: 10");
+		// Mode stats
+		expect(text).toContain("Time:  Best 82 WPM");
+		expect(text).toContain("Words: Best 78 WPM");
+		// Overall
 		expect(text).toContain("10 sessions");
-		expect(text).toContain("Total time: 5m 0s");
+		expect(text).toContain("5m 0s");
+		expect(text).toContain("Best: 82 WPM");
+		expect(text).toContain("93.2%");
+		// Trend chart
+		expect(text).toContain("WPM trend");
 	});
 
 	it("should render session rows with correct data", async () => {

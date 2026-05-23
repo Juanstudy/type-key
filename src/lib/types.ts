@@ -43,6 +43,13 @@ export interface StoredSession {
 
 export type NewSession = Omit<StoredSession, "id">;
 
+export interface ModeStats {
+	bestWpm: number;
+	avgWpm: number;
+	avgAccuracy: number;
+	sessions: number;
+}
+
 export interface SessionAggregates {
 	bestWpm: number;
 	bestAccuracy: number;
@@ -53,6 +60,9 @@ export interface SessionAggregates {
 	avgErrors: number;
 	totalSessions: number;
 	totalTimeSeconds: number;
+	time: ModeStats;
+	words: ModeStats;
+	recentWpms: number[];
 }
 
 export type ScreenName =

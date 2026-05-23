@@ -149,6 +149,33 @@ export function getSession(id: number): StoredSession | null {
 	return rowToSession(row);
 }
 
+function modeAggQuery(
+	database: Database,
+	mode: string,
+): { bestWpm: number; avgWpm: number; avgAccuracy: number; count: number } {
+	const row = database
+		.query(
+			`SELECT
+				COALESCE(MAX(wpm), 0) as bestWpm,
+				COALESCE(AVG(wpm), 0) as avgWpm,
+				COALESCE(AVG(accuracy), 0) as avgAccuracy,
+				COUNT(*) as count
+			FROM sessions WHERE mode = $mode`,
+		)
+		.get({ $mode: mode }) as {
+		bestWpm: number;
+		avgWpm: number;
+		avgAccuracy: number;
+		count: number;
+	};
+	return {
+		bestWpm: Math.round(row.bestWpm),
+		avgWpm: Math.round(row.avgWpm * 10) / 10,
+		avgAccuracy: Math.round(row.avgAccuracy * 10) / 10,
+		count: row.count,
+	};
+}
+
 /**
  * Retrieve aggregate statistics across all sessions.
  */
@@ -181,6 +208,16 @@ export function getAggregates(): SessionAggregates {
 		totalTimeSeconds: number;
 	};
 
+	const timeStats = modeAggQuery(database, "time");
+	const wordsStats = modeAggQuery(database, "words");
+
+	// Last 15 sessions' WPMs for trend chart
+	const recentRows = database
+		.query(`SELECT wpm FROM sessions ORDER BY timestamp DESC LIMIT 15`)
+		.all() as { wpm: number }[];
+	// Reverse so chart shows oldest → newest (left → right)
+	const recentWpms = recentRows.map((r) => r.wpm).reverse();
+
 	return {
 		bestWpm: Math.round(row.bestWpm),
 		bestAccuracy: Math.round(row.bestAccuracy * 10) / 10,
@@ -191,5 +228,18 @@ export function getAggregates(): SessionAggregates {
 		avgErrors: Math.round(row.avgErrors * 10) / 10,
 		totalSessions: row.totalSessions,
 		totalTimeSeconds: row.totalTimeSeconds,
+		time: {
+			bestWpm: timeStats.bestWpm,
+			avgWpm: timeStats.avgWpm,
+			avgAccuracy: timeStats.avgAccuracy,
+			sessions: timeStats.count,
+		},
+		words: {
+			bestWpm: wordsStats.bestWpm,
+			avgWpm: wordsStats.avgWpm,
+			avgAccuracy: wordsStats.avgAccuracy,
+			sessions: wordsStats.count,
+		},
+		recentWpms,
 	};
 }

@@ -272,21 +272,42 @@ export function buildHistory(
 	lines.push("— History —");
 	lines.push("");
 
-	// Stats header — overall stats
+	// Stats header — mode breakdown
 	const totalMin = Math.floor(aggregates.totalTimeSeconds / 60);
 	const totalSec = aggregates.totalTimeSeconds % 60;
 	const totalTimeStr =
 		totalMin > 0 ? `${totalMin}m ${totalSec}s` : `${totalSec}s`;
 
-	lines.push(`Best:   ${aggregates.bestWpm} WPM  ·  Acc: ${aggregates.bestAccuracy}%`);
+	// Time mode stats
+	if (aggregates.time.sessions > 0) {
+		lines.push(
+			`Time:  Best ${aggregates.time.bestWpm} WPM  Avg ${aggregates.time.avgWpm} WPM  Acc ${aggregates.time.avgAccuracy}%  (${aggregates.time.sessions} sessions)`,
+		);
+	}
+	// Words mode stats
+	if (aggregates.words.sessions > 0) {
+		lines.push(
+			`Words: Best ${aggregates.words.bestWpm} WPM  Avg ${aggregates.words.avgWpm} WPM  Acc ${aggregates.words.avgAccuracy}%  (${aggregates.words.sessions} sessions)`,
+		);
+	}
+
+	// Overall stats
 	lines.push(
-		`Avg:    ${aggregates.avgWpm} WPM  ·  Raw: ${aggregates.avgRawWpm} WPM  ·  Acc: ${aggregates.avgAccuracy}%`,
-	);
-	lines.push(`Avg duration: ${aggregates.avgDuration}s  ·  Avg errors: ${aggregates.avgErrors}`);
-	lines.push(
-		`${aggregates.totalSessions} sessions  ·  Total time: ${totalTimeStr}`,
+		`Overall: ${aggregates.totalSessions} sessions  ·  ${totalTimeStr}  ·  Best: ${aggregates.bestWpm} WPM  ·  Acc: ${aggregates.bestAccuracy}%`,
 	);
 	lines.push("");
+
+	// WPM trend chart (last 15 sessions)
+	if (aggregates.recentWpms.length >= 2) {
+		const trend = buildWpmChart(aggregates.recentWpms);
+		if (trend) {
+			lines.push("WPM trend (last 15):");
+			for (const chartLine of trend.split("\n")) {
+				lines.push(chartLine);
+			}
+			lines.push("");
+		}
+	}
 
 	// Session rows
 	if (sessions.length === 0) {

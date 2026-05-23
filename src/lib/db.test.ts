@@ -231,15 +231,36 @@ describe("getAggregates", () => {
 	});
 
 	it("should return correct stats across all sessions", () => {
-		// 3 sessions with known values
+		// 3 time-mode sessions
 		saveSession(
-			makeSession({ wpm: 50, rawWpm: 55, accuracy: 90, durationSeconds: 30, errors: 5 }),
+			makeSession({
+				wpm: 50,
+				rawWpm: 55,
+				accuracy: 90,
+				durationSeconds: 30,
+				errors: 5,
+				timestamp: "2026-05-22T10:00:00.000Z",
+			}),
 		);
 		saveSession(
-			makeSession({ wpm: 80, rawWpm: 85, accuracy: 95, durationSeconds: 60, errors: 3 }),
+			makeSession({
+				wpm: 80,
+				rawWpm: 85,
+				accuracy: 95,
+				durationSeconds: 60,
+				errors: 3,
+				timestamp: "2026-05-22T11:00:00.000Z",
+			}),
 		);
 		saveSession(
-			makeSession({ wpm: 65, rawWpm: 70, accuracy: 92.5, durationSeconds: 45, errors: 7 }),
+			makeSession({
+				wpm: 65,
+				rawWpm: 70,
+				accuracy: 92.5,
+				durationSeconds: 45,
+				errors: 7,
+				timestamp: "2026-05-22T12:00:00.000Z",
+			}),
 		);
 
 		const agg = getAggregates();
@@ -249,11 +270,6 @@ describe("getAggregates", () => {
 		expect(agg.bestAccuracy).toBe(95);
 
 		// Averages over all 3
-		// WPM: (50+80+65)/3 = 65
-		// Raw: (55+85+70)/3 = 70
-		// Acc: (90+95+92.5)/3 = 92.5
-		// Dur: (30+60+45)/3 = 45
-		// Err: (5+3+7)/3 = 5
 		expect(agg.avgWpm).toBe(65);
 		expect(agg.avgRawWpm).toBe(70);
 		expect(agg.avgAccuracy).toBe(92.5);
@@ -262,12 +278,67 @@ describe("getAggregates", () => {
 
 		// Count + total time
 		expect(agg.totalSessions).toBe(3);
-		expect(agg.totalTimeSeconds).toBe(135); // 30+60+45
+		expect(agg.totalTimeSeconds).toBe(135);
+
+		// Mode stats: all are "time" mode
+		expect(agg.time.bestWpm).toBe(80);
+		expect(agg.time.avgWpm).toBe(65);
+		expect(agg.time.sessions).toBe(3);
+		expect(agg.words.sessions).toBe(0);
+		expect(agg.words.bestWpm).toBe(0);
+
+		// Recent WPMs (last 15, oldest → newest)
+		expect(agg.recentWpms).toEqual([50, 80, 65]);
+	});
+
+	it("should separate stats by mode (time vs words)", () => {
+		saveSession(makeSession({ mode: "time", wpm: 70, accuracy: 90 }));
+		saveSession(makeSession({ mode: "time", wpm: 80, accuracy: 92 }));
+		saveSession(
+			makeSession({
+				mode: "words",
+				wpm: 85,
+				accuracy: 95,
+				timeOption: null,
+				wordCount: 50,
+			}),
+		);
+
+		const agg = getAggregates();
+
+		expect(agg.time.bestWpm).toBe(80);
+		expect(agg.time.avgWpm).toBe(75);
+		expect(agg.time.avgAccuracy).toBe(91);
+		expect(agg.time.sessions).toBe(2);
+
+		expect(agg.words.bestWpm).toBe(85);
+		expect(agg.words.avgWpm).toBe(85);
+		expect(agg.words.avgAccuracy).toBe(95);
+		expect(agg.words.sessions).toBe(1);
+
+		// Overall
+		expect(agg.totalSessions).toBe(3);
 	});
 
 	it("should handle rounding correctly", () => {
-		saveSession(makeSession({ wpm: 33, rawWpm: 37, accuracy: 91.7, durationSeconds: 27, errors: 4 }));
-		saveSession(makeSession({ wpm: 47, rawWpm: 51, accuracy: 94.2, durationSeconds: 42, errors: 6 }));
+		saveSession(
+			makeSession({
+				wpm: 33,
+				rawWpm: 37,
+				accuracy: 91.7,
+				durationSeconds: 27,
+				errors: 4,
+			}),
+		);
+		saveSession(
+			makeSession({
+				wpm: 47,
+				rawWpm: 51,
+				accuracy: 94.2,
+				durationSeconds: 42,
+				errors: 6,
+			}),
+		);
 
 		const agg = getAggregates();
 		// WPM: (33+47)/2 = 40
