@@ -7,7 +7,7 @@ import type {
 import wordlist from "./data/wordlists/english.json";
 import { StyledText, stringToStyledText } from "@opentui/core";
 import type { TextChunk } from "@opentui/core";
-import asciichart from "asciichart";
+import { plot } from "@crafter/charts";
 
 export interface SessionResult {
 	wpm: number;
@@ -164,13 +164,17 @@ function downsample(data: number[], maxPoints: number): number[] {
 }
 
 /**
- * Build an ASCII chart of WPM over time using asciichart.
+ * Build a chart of WPM over time using @crafter/charts.
  * Returns empty string when there are fewer than 2 data points.
  */
-export function buildWpmChart(wpmHistory: number[]): string {
+function buildWpmChart(wpmHistory: number[], width?: number): string {
 	if (wpmHistory.length < 2) return "";
 	const downsampled = downsample(wpmHistory, 30);
-	return asciichart.plot(downsampled, { height: 6 });
+
+	const chartOptions: { width?: number; min?: number; max?: number } = {};
+	if (width !== undefined) chartOptions.width = width;
+
+	return plot(downsampled, chartOptions);
 }
 
 function padCenter(s: string, width: number): string {

@@ -108,7 +108,7 @@ bun build ./src/index.ts --compile --outfile monkeyterm
 | **Runtime**  | [Bun](https://bun.sh)                                                          |
 | **UI**       | [@opentui/core](https://opentui.com) — core Zig nativo (imperativo, sin React) |
 | **Database** | `bun:sqlite` — SQLite embebido nativo                                          |
-| **Charts**   | [asciichart](https://github.com/kroitor/asciichart)                            |
+| **Charts**   | [@crafter/charts](https://github.com/crafterjs/charts) — zero-dependency charts for terminal |
 | **Language** | TypeScript 6.0.3 (strict mode)                                                 |
 | **Build**    | `bun build --compile` → binario standalone                                     |
 
@@ -140,7 +140,6 @@ monkeyterm/
 │   │   └── wordlists/       # Wordlists en JSON
 │   ├── screens.ts           # Todas las screens (menu, game, results, history)
 │   ├── screens.test.ts      # Tests de screens
-│   ├── asciichart.d.ts      # Type declarations para asciichart
 │   └── index.ts             # Entry point + integración
 ├── docs/
 │   ├── PRD.md               # Product Requirements Document

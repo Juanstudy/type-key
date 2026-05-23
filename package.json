@@ -28,7 +28,7 @@
     "typescript": "^6.0.3"
   },
   "dependencies": {
-    "@opentui/core": "^0.1.103",
-    "asciichart": "^1.5.25"
+    "@crafter/charts": "^0.2.4",
+    "@opentui/core": "^0.1.103"
   }
 }
