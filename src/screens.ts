@@ -7,7 +7,7 @@ import type {
 import wordlist from "./data/wordlists/english.json";
 import { StyledText, stringToStyledText } from "@opentui/core";
 import type { TextChunk } from "@opentui/core";
-import { chart, renderToString } from "@crafter/charts";
+import { sparkline } from "@crafter/charts";
 
 export interface SessionResult {
 	wpm: number;
@@ -164,19 +164,13 @@ function downsample(data: number[], maxPoints: number): number[] {
 }
 
 /**
- * Build a chart of WPM over time using @crafter/charts.
+ * Build a sparkline of WPM over time using @crafter/charts.
  * Returns empty string when there are fewer than 2 data points.
  */
-function buildWpmChart(wpmHistory: number[], _width?: number): string {
+function buildWpmChart(wpmHistory: number[]): string {
 	if (wpmHistory.length < 2) return "";
 	const downsampled = downsample(wpmHistory, 30);
-
-	const c = chart({ width: _width, height: 6, charset: "braille" })
-		.data(downsampled.map((v, i) => ({ x: i, y: v })), { xKey: "x" })
-		.yAxis()
-		.line({ key: "y" });
-
-	return renderToString(c);
+	return sparkline(downsampled);
 }
 
 function padCenter(s: string, width: number): string {
@@ -203,7 +197,7 @@ export function buildResults(
 		`Errors:     ${result.errors}`,
 	];
 
-	if (chartLines.length > 1) {
+	if (chartLines.length > 0) {
 		lines.push("");
 		lines.push("WPM over time:");
 		for (const chartLine of chartLines) {
@@ -447,7 +441,7 @@ export function buildHistoryDetail(session: StoredSession): StyledText {
 		`Errors:     ${session.errors}`,
 	];
 
-	if (chartLines.length > 1) {
+	if (chartLines.length > 0) {
 		lines.push("");
 		lines.push("WPM over time:");
 		for (const chartLine of chartLines) {
