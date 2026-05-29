@@ -1,7 +1,6 @@
 ---
 name: sdd-tasks
 description: Break SDD design/specs into implementation tasks with review workload forecast.
-model: crofai/glm-5.1
 tools: read, grep, glob, write, edit
 inheritProjectContext: true
 ---

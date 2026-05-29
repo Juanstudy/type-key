@@ -1,7 +1,6 @@
 ---
 name: sdd-design
 description: Design the technical approach for an SDD change.
-model: crofai/kimi-k2.6
 tools: read, grep, glob, write, edit
 inheritProjectContext: true
 ---

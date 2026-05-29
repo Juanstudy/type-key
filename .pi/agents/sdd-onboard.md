@@ -1,8 +1,6 @@
 ---
 name: sdd-onboard
 description: Guide a user through a complete SDD cycle on a small real project change.
-model: crofai/glm-5.1
-thinking: medium
 tools: read, grep, glob, write, edit, bash
 inheritProjectContext: true
 ---

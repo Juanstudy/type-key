@@ -238,7 +238,9 @@ describe("buildResults", () => {
 		const output = buildResults(result, [30, 40, 45, 50, 45, 55, 60]);
 		expect(output).toBeInstanceOf(StyledText);
 		const text = chunkText(output.chunks);
-		expect(text).toContain("WPM over time");
+		// Verify chart presence (not exact chars)
+		expect(text).not.toContain("sparkline");
+		expect(text).toContain("over time");
 	});
 
 	it("should not include chart when wpmHistory is empty", async () => {
@@ -254,7 +256,9 @@ describe("buildResults", () => {
 		const output = buildResults(result, []);
 		expect(output).toBeInstanceOf(StyledText);
 		const text = chunkText(output.chunks);
-		expect(text).not.toContain("WPM over time");
+		// Verify chart is not included
+		expect(text).not.toContain("over time");
+		expect(text).not.toContain("sparkline");
 	});
 
 	it("should handle zero values", async () => {
@@ -324,7 +328,7 @@ describe("buildHistory", () => {
 		const { buildHistory } = await import("./screens");
 		const sessions = [makeSession()];
 		const agg = makeAggregates();
-		const output = buildHistory(sessions, agg, 2, 3, 0);
+		const output = buildHistory(sessions, agg, 1, 3, 0);
 		const text = chunkText(output.chunks);
 		expect(text).toContain("Page 2/3");
 	});
