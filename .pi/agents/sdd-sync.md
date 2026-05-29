@@ -1,7 +1,6 @@
 ---
 name: sdd-sync
 description: Sync verified SDD delta specs into OpenSpec canonical specs without archiving the change.
-model: crofai/deepseek-v4-flash
 tools: read, grep, glob, write, edit, bash
 inheritProjectContext: true
 ---

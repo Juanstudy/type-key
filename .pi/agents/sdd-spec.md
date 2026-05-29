@@ -1,7 +1,6 @@
 ---
 name: sdd-spec
 description: Write SDD delta specs with requirements and scenarios.
-model: crofai/glm-5.1
 tools: read, grep, glob, write, edit
 inheritProjectContext: true
 ---

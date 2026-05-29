@@ -1,7 +1,6 @@
 ---
 name: sdd-archive
 description: Archive a verified SDD change into OpenSpec source specs.
-model: crofai/deepseek-v4-flash
 tools: read, grep, glob, write, edit, bash
 inheritProjectContext: true
 ---

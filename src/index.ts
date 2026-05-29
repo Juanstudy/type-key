@@ -317,10 +317,10 @@ function handleKey(key: KeyEvent): void {
 
 	switch (state.screen) {
 		case "menu":
-			if (key.name === "left" || key.name === "right") {
+			if (key.name === "left" || key.name === "right" || key.name === "l") {
 				state.mode = state.mode === "time" ? "words" : "time";
 				show(buildMenu(state.mode, getMenuSelectedIndex(), getMenuOptions()));
-			} else if (key.name === "up") {
+			} else if (key.name === "up" || key.name === "k") {
 				if (state.mode === "time") {
 					state.selectedTimeIndex = Math.max(0, state.selectedTimeIndex - 1);
 				} else {
@@ -330,7 +330,7 @@ function handleKey(key: KeyEvent): void {
 					);
 				}
 				show(buildMenu(state.mode, getMenuSelectedIndex(), getMenuOptions()));
-			} else if (key.name === "down") {
+			} else if (key.name === "down" || key.name === "j") {
 				if (state.mode === "time") {
 					state.selectedTimeIndex = Math.min(
 						TIME_OPTIONS.length - 1,
@@ -395,7 +395,7 @@ function handleKey(key: KeyEvent): void {
 		case "history":
 			if (key.name === "escape") {
 				goMenu();
-			} else if (key.name === "up") {
+			} else if (key.name === "up" || key.name === "k") {
 				state.historySelectedIndex = Math.max(
 					0,
 					state.historySelectedIndex - 1,
@@ -409,7 +409,7 @@ function handleKey(key: KeyEvent): void {
 						state.historySelectedIndex,
 					),
 				);
-			} else if (key.name === "down") {
+			} else if (key.name === "down" || key.name === "j") {
 				state.historySelectedIndex = Math.min(
 					state.historySessions.length - 1,
 					state.historySelectedIndex + 1,
@@ -423,6 +423,36 @@ function handleKey(key: KeyEvent): void {
 						state.historySelectedIndex,
 					),
 				);
+			} else if (key.name === "left" || key.name === "h") {
+				if (state.historyPage > 0) {
+					state.historyPage--;
+					state.historySelectedIndex = 0;
+					state.historySessions = getSessions(10, state.historyPage * 10);
+					show(
+						buildHistory(
+							state.historySessions,
+							state.historyAggregates!,
+							state.historyPage,
+							state.historyTotalPages,
+							state.historySelectedIndex,
+						),
+					);
+				}
+			} else if (key.name === "right" || key.name === "l") {
+				if (state.historyPage < state.historyTotalPages - 1) {
+					state.historyPage++;
+					state.historySelectedIndex = 0;
+					state.historySessions = getSessions(10, state.historyPage * 10);
+					show(
+						buildHistory(
+							state.historySessions,
+							state.historyAggregates!,
+							state.historyPage,
+							state.historyTotalPages,
+							state.historySelectedIndex,
+						),
+					);
+				}
 			} else if (key.name === "return" || key.name === "enter") {
 				const selected = state.historySessions[state.historySelectedIndex];
 				if (selected) goHistoryDetail(selected.id);

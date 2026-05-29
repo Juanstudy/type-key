@@ -7,7 +7,7 @@ import type {
 import wordlist from "./data/wordlists/english.json";
 import { StyledText, stringToStyledText } from "@opentui/core";
 import type { TextChunk } from "@opentui/core";
-import { sparkline } from "@crafter/charts";
+import { chart, renderToString, sparkArea } from "@crafter/charts";
 
 export interface SessionResult {
 	wpm: number;
@@ -105,7 +105,7 @@ export function buildMenu(
 	// Hints
 	chunks.push(
 		...stringToStyledText(
-			"\n← → Mode · ↑↓ Option · Enter Start · H History · Ctrl+C Quit",
+			"\n← →/hl Mode · ↑↓/jk Option · Enter Start · h History · Ctrl+C Quit",
 		).chunks,
 	);
 
@@ -164,13 +164,62 @@ function downsample(data: number[], maxPoints: number): number[] {
 }
 
 /**
- * Build a sparkline of WPM over time using @crafter/charts.
- * Returns empty string when there are fewer than 2 data points.
+ * Render chart lines inside a box: left-aligned with right padding
+ * to fill the content width, avoiding padCenter which breaks chart alignment.
  */
-function buildWpmChart(wpmHistory: number[]): string {
+function renderChartLines(lines: string[], contentWidth: number): TextChunk[] {
+	const chunks: TextChunk[] = [];
+	for (const chartLine of lines) {
+		const padded =
+			" " +
+			chartLine +
+			" ".repeat(Math.max(0, contentWidth - chartLine.length + 1));
+		chunks.push(colored("│", HEADER_FG));
+		chunks.push(...stringToStyledText(padded).chunks);
+		chunks.push(colored("│\n", HEADER_FG));
+	}
+	return chunks;
+}
+
+/**
+ * Build a WPM chart using @crafter/charts.
+ * Returns empty string when there are fewer than 2 data points.
+ *
+ * Use style "line" (default) for a full braille chart with y-axis;
+ * use style "area" for a compact area sparkline.
+ */
+function buildWpmChart(
+	wpmHistory: number[],
+	options?: {
+		height?: number;
+		style?: "line" | "area";
+		label?: string;
+	},
+): string {
 	if (wpmHistory.length < 2) return "";
-	const downsampled = downsample(wpmHistory, 30);
-	return sparkline(downsampled);
+	const downsampled = downsample(wpmHistory, 40);
+
+	if (options?.style === "area") {
+		return sparkArea(downsampled, {
+			height: options?.height ?? 3,
+		});
+	}
+
+	// Default: full bar chart with block characters (█) + y-axis
+	const dataPoints = downsampled.map((wpm, i) => ({ i, wpm }));
+	const c = chart({
+		width: "auto",
+		height: options?.height ?? 6,
+		charset: "block",
+	})
+		.data(dataPoints, { xKey: "i" })
+		.yAxis({ format: (v: number) => v.toFixed(0) })
+		.bar({
+			key: "wpm",
+			color: "green",
+			label: options?.label ?? "WPM",
+		});
+	return renderToString(c);
 }
 
 function padCenter(s: string, width: number): string {
@@ -184,7 +233,10 @@ export function buildResults(
 	result: SessionResult,
 	wpmHistory: number[] = [],
 ): StyledText {
-	const chartString = buildWpmChart(wpmHistory);
+	const chartString = buildWpmChart(wpmHistory, {
+		height: 6,
+		label: "WPM",
+	});
 	const chartLines = chartString ? chartString.split("\n") : [];
 
 	const lines: string[] = [
@@ -197,24 +249,22 @@ export function buildResults(
 		`Errors:     ${result.errors}`,
 	];
 
-	if (chartLines.length > 0) {
-		lines.push("");
-		lines.push("WPM over time:");
-		for (const chartLine of chartLines) {
-			lines.push(chartLine);
-		}
-	}
-
-	lines.push("");
-	lines.push("Tab: Restart · Esc: Menu · Ctrl+C: Quit");
-
-	const contentWidth = Math.max(...lines.map((l) => l.length), 20);
+	// Calculate content width from stats + footer + chart (to keep box wide enough)
+	const footerLine = "Tab: Restart · Esc: Menu · Ctrl+C: Quit";
+	const chartWidths = chartLines.map((l) => l.length);
+	const contentWidth = Math.max(
+		...lines.map((l) => l.length),
+		footerLine.length,
+		...chartWidths,
+		20,
+	);
 
 	const chunks: TextChunk[] = [];
 
 	// Top border
 	chunks.push(colored("┌" + "─".repeat(contentWidth + 2) + "┐\n", HEADER_FG));
 
+	// Centered lines: stats
 	for (const line of lines) {
 		const isTitle = line === lines[0];
 		const isSpacer = line === "";
@@ -233,6 +283,27 @@ export function buildResults(
 			chunks.push(colored("│\n", HEADER_FG));
 		}
 	}
+
+	// Chart section: left-aligned, not centered
+	if (chartLines.length > 0) {
+		// Spacer
+		chunks.push(colored("│" + " ".repeat(contentWidth + 2) + "│\n", HEADER_FG));
+		// Label
+		const labelPadded = " " + padCenter("WPM over time:", contentWidth) + " ";
+		chunks.push(colored("│", HEADER_FG));
+		chunks.push(...stringToStyledText(labelPadded).chunks);
+		chunks.push(colored("│\n", HEADER_FG));
+		// Chart lines - left-aligned
+		chunks.push(...renderChartLines(chartLines, contentWidth));
+	}
+
+	// Spacer before footer
+	chunks.push(colored("│" + " ".repeat(contentWidth + 2) + "│\n", HEADER_FG));
+	// Footer
+	const footerPadded = " " + padCenter(footerLine, contentWidth) + " ";
+	chunks.push(colored("│", HEADER_FG));
+	chunks.push(...stringToStyledText(footerPadded).chunks);
+	chunks.push(colored("│\n", HEADER_FG));
 
 	// Bottom border
 	chunks.push(colored("└" + "─".repeat(contentWidth + 2) + "┘", HEADER_FG));
@@ -298,14 +369,17 @@ export function buildHistory(
 	lines.push("");
 
 	// WPM trend chart (last 15 sessions)
+	const trendLines: string[] = [];
 	if (aggregates.recentWpms.length >= 2) {
-		const trend = buildWpmChart(aggregates.recentWpms);
+		const trend = buildWpmChart(aggregates.recentWpms, {
+			height: 3,
+			style: "area",
+		});
 		if (trend) {
-			lines.push("WPM trend (last 15):");
+			trendLines.push("WPM trend (last 15):");
 			for (const chartLine of trend.split("\n")) {
-				lines.push(chartLine);
+				trendLines.push(chartLine);
 			}
-			lines.push("");
 		}
 	}
 
@@ -330,25 +404,33 @@ export function buildHistory(
 
 	// Footer
 	if (sessions.length > 0) {
-		lines.push(`Page ${page}/${totalPages}   ↑↓ Navigate  Enter View`);
+		lines.push(
+			`Page ${page + 1}/${totalPages}   ↑↓/jk Select  ← →/hl Page  Enter View`,
+		);
 	}
 	lines.push("Esc: Menu · Ctrl+C: Quit");
 
-	const contentWidth = Math.max(...lines.map((l) => l.length), 20);
+	// Compute content width from all content including chart
+	const allWidths = [
+		...lines.map((l) => l.length),
+		...trendLines.map((l) => l.length),
+		20,
+	];
+	const contentWidth = Math.max(...allWidths);
 	const chunks: TextChunk[] = [];
 
 	// Top border
 	chunks.push(colored("┌" + "─".repeat(contentWidth + 2) + "┐\n", HEADER_FG));
 
-	for (let i = 0; i < lines.length; i++) {
+	// Stats section (centered) — only up to sessionStart, not all lines
+	const sessionStart =
+		4 +
+		(aggregates.time.sessions > 0 ? 1 : 0) +
+		(aggregates.words.sessions > 0 ? 1 : 0);
+	for (let i = 0; i < sessionStart; i++) {
 		const line = lines[i]!;
 		const isTitle = i === 0;
 		const isSpacer = line === "";
-
-		// Check if this is a session row that is selected
-		const isSelectedRow =
-			sessions.length > 0 && i >= 6 && i < 6 + sessions.length;
-		const isActuallySelected = isSelectedRow && i - 6 === selectedIndex;
 
 		const padded = " " + padCenter(line, contentWidth) + " ";
 		if (isTitle) {
@@ -356,6 +438,39 @@ export function buildHistory(
 			chunks.push(colored(padded, SELECTED_FG));
 			chunks.push(colored("│\n", HEADER_FG));
 		} else if (isSpacer) {
+			chunks.push(
+				colored("│" + " ".repeat(contentWidth + 2) + "│\n", HEADER_FG),
+			);
+		} else {
+			chunks.push(colored("│", HEADER_FG));
+			chunks.push(...stringToStyledText(padded).chunks);
+			chunks.push(colored("│\n", HEADER_FG));
+		}
+	}
+
+	// Trend chart section (left-aligned)
+	if (trendLines.length > 0) {
+		// First line is the label "WPM trend (last 15):" - centered
+		const labelPadded = " " + padCenter(trendLines[0]!, contentWidth) + " ";
+		chunks.push(colored("│", HEADER_FG));
+		chunks.push(...stringToStyledText(labelPadded).chunks);
+		chunks.push(colored("│\n", HEADER_FG));
+		// Chart lines - left-aligned
+		chunks.push(...renderChartLines(trendLines.slice(1), contentWidth));
+		// Spacer after chart
+		chunks.push(colored("│" + " ".repeat(contentWidth + 2) + "│\n", HEADER_FG));
+	}
+
+	// Session rows + footer (centered)
+	for (let i = sessionStart; i < lines.length; i++) {
+		const line = lines[i]!;
+		const isSpacer = line === "";
+		const rowIndex = i - sessionStart;
+		const isSelectedRow = sessions.length > 0 && rowIndex < sessions.length;
+		const isActuallySelected = isSelectedRow && rowIndex === selectedIndex;
+
+		const padded = " " + padCenter(line, contentWidth) + " ";
+		if (isSpacer) {
 			chunks.push(
 				colored("│" + " ".repeat(contentWidth + 2) + "│\n", HEADER_FG),
 			);
@@ -426,7 +541,10 @@ export function buildEmptyHistory(): StyledText {
 export function buildHistoryDetail(session: StoredSession): StyledText {
 	const modeStr = formatModeOption(session);
 	const dateStr = formatDate(session.timestamp);
-	const chartString = buildWpmChart(session.wpmHistory);
+	const chartString = buildWpmChart(session.wpmHistory, {
+		height: 6,
+		label: "WPM",
+	});
 	const chartLines = chartString ? chartString.split("\n") : [];
 
 	const lines: string[] = [
@@ -441,22 +559,20 @@ export function buildHistoryDetail(session: StoredSession): StyledText {
 		`Errors:     ${session.errors}`,
 	];
 
-	if (chartLines.length > 0) {
-		lines.push("");
-		lines.push("WPM over time:");
-		for (const chartLine of chartLines) {
-			lines.push(chartLine);
-		}
-	}
-
-	lines.push("");
-	lines.push("Tab: Re-run · Esc: History · Ctrl+C: Quit");
-
-	const contentWidth = Math.max(...lines.map((l) => l.length), 20);
+	// Calculate content width from all content including chart
+	const footerLine = "Tab: Re-run · Esc: History · Ctrl+C: Quit";
+	const chartWidths = chartLines.map((l) => l.length);
+	const contentWidth = Math.max(
+		...lines.map((l) => l.length),
+		footerLine.length,
+		...chartWidths,
+		20,
+	);
 	const chunks: TextChunk[] = [];
 
 	chunks.push(colored("┌" + "─".repeat(contentWidth + 2) + "┐\n", HEADER_FG));
 
+	// Stats section (centered)
 	for (let i = 0; i < lines.length; i++) {
 		const line = lines[i]!;
 		const isTitle = i === 0;
@@ -477,6 +593,27 @@ export function buildHistoryDetail(session: StoredSession): StyledText {
 			chunks.push(colored("│\n", HEADER_FG));
 		}
 	}
+
+	// Chart section: left-aligned, not centered
+	if (chartLines.length > 0) {
+		// Spacer
+		chunks.push(colored("│" + " ".repeat(contentWidth + 2) + "│\n", HEADER_FG));
+		// Label
+		const labelPadded = " " + padCenter("WPM over time:", contentWidth) + " ";
+		chunks.push(colored("│", HEADER_FG));
+		chunks.push(...stringToStyledText(labelPadded).chunks);
+		chunks.push(colored("│\n", HEADER_FG));
+		// Chart lines - left-aligned
+		chunks.push(...renderChartLines(chartLines, contentWidth));
+	}
+
+	// Spacer before footer
+	chunks.push(colored("│" + " ".repeat(contentWidth + 2) + "│\n", HEADER_FG));
+	// Footer
+	const footerPadded = " " + padCenter(footerLine, contentWidth) + " ";
+	chunks.push(colored("│", HEADER_FG));
+	chunks.push(...stringToStyledText(footerPadded).chunks);
+	chunks.push(colored("│\n", HEADER_FG));
 
 	chunks.push(colored("└" + "─".repeat(contentWidth + 2) + "┘", HEADER_FG));
 	return new StyledText(chunks);
