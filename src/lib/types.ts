@@ -71,3 +71,12 @@ export type ScreenName =
 	| "results"
 	| "history"
 	| "history-detail";
+
+export interface SessionResult {
+	wpm: number;
+	rawWpm: number;
+	accuracy: number;
+	correctChars: number;
+	totalChars: number;
+	errors: number;
+}

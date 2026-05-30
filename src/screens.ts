@@ -4,10 +4,18 @@ import type {
 	StoredSession,
 	SessionAggregates,
 } from "./lib/types";
-import wordlist from "./data/wordlists/english.json";
 import { StyledText, stringToStyledText } from "@opentui/core";
 import type { TextChunk } from "@opentui/core";
 import { chart, renderToString, sparkArea } from "@crafter/charts";
+import {
+	CORRECT_FG,
+	INCORRECT_FG,
+	EXTRA_FG,
+	SELECTED_FG,
+	HEADER_FG,
+} from "./ui/theme";
+import { colored } from "./ui/word-display";
+export { shuffleWords } from "./lib/wordlists";
 
 export interface SessionResult {
 	wpm: number;
@@ -16,21 +24,6 @@ export interface SessionResult {
 	correctChars: number;
 	totalChars: number;
 	errors: number;
-}
-
-/** Color for correct letters — green */
-const CORRECT_FG = "#98c379";
-/** Color for incorrect letters — red */
-const INCORRECT_FG = "#e06c75";
-/** Color for extra characters — red-tinted */
-const EXTRA_FG = "#e06c75";
-/** Color for selected menu option — bright */
-const SELECTED_FG = "#e5c07b";
-/** Color for header text — muted */
-const HEADER_FG = "#5c6370";
-
-function colored(text: string, color: string): TextChunk {
-	return { text, fg: color } as unknown as TextChunk;
 }
 
 export function wordText(word: {
@@ -58,18 +51,6 @@ export function wordText(word: {
 		chunks.push({ text: " " } as TextChunk);
 	}
 	return chunks;
-}
-
-export function shuffleWords(count: number): string[] {
-	const a = [...wordlist];
-	for (let i = a.length - 1; i > 0; i--) {
-		const j = Math.floor(Math.random() * (i + 1));
-		const vi = a[i] as string;
-		const vj = a[j] as string;
-		a[i] = vj;
-		a[j] = vi;
-	}
-	return a.slice(0, count);
 }
 
 export const VERSION = "1.0.0";
