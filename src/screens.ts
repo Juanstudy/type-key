@@ -53,81 +53,8 @@ export function wordText(word: {
 	return chunks;
 }
 
-export const VERSION = "1.0.0";
-
-const MODE_LABELS = { time: "Time", words: "Words" } as const;
-
-export function buildMenu(
-	mode: "time" | "words",
-	selectedIndex: number,
-	options: number[],
-): StyledText {
-	const chunks: TextChunk[] = [];
-
-	// Title
-	chunks.push(colored(`Monkeyterm v${VERSION}\n\n`, HEADER_FG));
-
-	// Mode header
-	const otherMode = mode === "time" ? "Words" : "Time";
-	chunks.push(colored(`${MODE_LABELS[mode]}`, SELECTED_FG));
-	chunks.push(...stringToStyledText(`  ·  ${otherMode}\n\n`).chunks);
-
-	// Options
-	const suffix = mode === "time" ? "s" : " words";
-	for (let i = 0; i < options.length; i++) {
-		const sel = i === selectedIndex;
-		if (sel) {
-			chunks.push(colored(`▸ ${options[i]}${suffix}\n`, SELECTED_FG));
-		} else {
-			chunks.push(...stringToStyledText(`  ${options[i]}${suffix}\n`).chunks);
-		}
-	}
-
-	// Hints
-	chunks.push(
-		...stringToStyledText(
-			"\n← →/hl Mode · ↑↓/jk Option · Enter Start · h History · Ctrl+C Quit",
-		).chunks,
-	);
-
-	return new StyledText(chunks);
-}
-
-export function buildGame(
-	remainingSeconds: number,
-	liveWpm: number,
-	liveRawWpm: number,
-	words: Word[],
-	currentWordIndex: number,
-): StyledText {
-	const chunks: TextChunk[] = [];
-
-	// Header — muted color
-	chunks.push(
-		colored(
-			`⏱ ${remainingSeconds}s    WPM: ${liveWpm}  RAW: ${liveRawWpm}\n\n`,
-			HEADER_FG,
-		),
-	);
-
-	// Words — only show 3 lines around current position
-	const start = Math.max(0, currentWordIndex - 1);
-	const end = Math.min(words.length, start + 3);
-
-	for (let i = start; i < end; i++) {
-		const word = words[i];
-		if (word) {
-			const wordChunks = wordText(word);
-			chunks.push(...wordChunks);
-			chunks.push({ text: "\n" } as TextChunk);
-		}
-	}
-
-	// Footer
-	chunks.push(colored("\nEsc: Menu · Ctrl+C: Quit", HEADER_FG));
-
-	return new StyledText(chunks);
-}
+export { VERSION, buildMenu } from "./screens/menu";
+export { buildGame } from "./screens/game";
 
 /**
  * Downsample an array to at most `maxPoints` by taking evenly spaced samples.
