@@ -30,6 +30,7 @@ export function buildGame(
 		if (word) {
 			const wordChunks = wordText(word);
 			chunks.push(...wordChunks);
+			// safe: TextChunk only requires text/strings and optional fg
 			chunks.push({ text: "\n" } as TextChunk);
 		}
 	}

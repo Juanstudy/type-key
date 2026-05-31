@@ -160,8 +160,10 @@ export function buildHistory(
 		const line = lines[i]!;
 		const isSpacer = line === "";
 		const rowIndex = i - sessionStart;
-		const isSelectedRow = sessions.length > 0 && rowIndex < sessions.length;
-		const isActuallySelected = isSelectedRow && rowIndex === selectedIndex;
+		const isActuallySelected =
+			sessions.length > 0 &&
+			rowIndex < sessions.length &&
+			rowIndex === selectedIndex;
 
 		const padded = " " + padCenter(line, contentWidth) + " ";
 		if (isSpacer) {

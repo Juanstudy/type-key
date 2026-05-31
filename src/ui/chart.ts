@@ -2,6 +2,7 @@ import { chart, renderToString, sparkArea } from "@crafter/charts";
 import type { TextChunk } from "@opentui/core";
 import { stringToStyledText } from "@opentui/core";
 import { HEADER_FG } from "./theme";
+import { colored } from "./word-display";
 
 /**
  * Downsample an array to at most `maxPoints` by taking evenly spaced samples.
@@ -37,10 +38,6 @@ export function renderChartLines(
 		chunks.push(colored("│\n", HEADER_FG));
 	}
 	return chunks;
-}
-
-function colored(text: string, color: string): TextChunk {
-	return { text, fg: color } as unknown as TextChunk;
 }
 
 /**

@@ -1,6 +1,7 @@
 ---
 name: sdd-explore
 description: Explore an SDD change idea before proposal.
+model: crofai/deepseek-v4-pro
 tools: read, grep, glob, webfetch
 inheritProjectContext: true
 ---

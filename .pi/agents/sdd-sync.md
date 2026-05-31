@@ -1,6 +1,7 @@
 ---
 name: sdd-sync
 description: Sync verified SDD delta specs into OpenSpec canonical specs without archiving the change.
+model: crofai/kimi-k2.6
 tools: read, grep, glob, write, edit, bash
 inheritProjectContext: true
 ---

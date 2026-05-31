@@ -1,6 +1,7 @@
 ---
 name: sdd-proposal
 description: Write an SDD proposal for an approved change idea.
+model: crofai/deepseek-v4-pro
 tools: read, grep, glob, write, edit
 inheritProjectContext: true
 ---

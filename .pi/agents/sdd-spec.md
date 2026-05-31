@@ -1,6 +1,7 @@
 ---
 name: sdd-spec
 description: Write SDD delta specs with requirements and scenarios.
+model: crofai/mimo-v2.5-pro
 tools: read, grep, glob, write, edit
 inheritProjectContext: true
 ---

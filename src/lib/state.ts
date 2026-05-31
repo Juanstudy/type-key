@@ -51,7 +51,6 @@ const state: {
 	selectedWordCountIndex: number;
 	engine: TypingEngine | null;
 	timer: Timer | null;
-	words: string[];
 	result: SessionResult | null;
 	liveWpm: number;
 	liveRawWpm: number;
@@ -71,7 +70,6 @@ const state: {
 	selectedWordCountIndex: 1,
 	engine: null,
 	timer: null,
-	words: [],
 	result: null,
 	liveWpm: 0,
 	liveRawWpm: 0,
@@ -258,9 +256,10 @@ export function goResults(): void {
 			durationSeconds: state.elapsedSeconds,
 			wpmHistory: state.wpmHistory,
 		});
+
+		removeTitleFont();
+		show(buildResults(state.result, state.wpmHistory));
 	}
-	removeTitleFont();
-	show(buildResults(state.result!, state.wpmHistory));
 }
 
 function updateLiveWpm(): void {
@@ -485,11 +484,13 @@ export function handleKey(key: KeyEvent): void {
 				if (s) {
 					state.mode = s.mode;
 					if (s.mode === "time" && s.timeOption !== null) {
+						// safe: indexOf confirmed the value is a valid tuple member
 						const idx = TIME_OPTIONS.indexOf(
 							s.timeOption as (typeof TIME_OPTIONS)[number],
 						);
 						if (idx >= 0) state.selectedTimeIndex = idx;
 					} else if (s.mode === "words" && s.wordCount !== null) {
+						// safe: indexOf confirmed the value is a valid tuple member
 						const idx = WORD_COUNT_OPTIONS.indexOf(
 							s.wordCount as (typeof WORD_COUNT_OPTIONS)[number],
 						);

@@ -3,6 +3,7 @@ import { CORRECT_FG, INCORRECT_FG, EXTRA_FG } from "./theme";
 import type { Letter } from "../lib/types";
 
 export function colored(text: string, color: string): TextChunk {
+	// safe: TextChunk only requires text/strings and optional fg
 	return { text, fg: color } as unknown as TextChunk;
 }
 
@@ -23,11 +24,13 @@ export function wordText(word: {
 				chunks.push(colored(letter.char, EXTRA_FG));
 				break;
 			default:
+				// safe: TextChunk only requires text/strings and optional fg
 				chunks.push({ text: letter.char } as TextChunk);
 				break;
 		}
 	}
 	if (!word.isCompleted) {
+		// safe: TextChunk only requires text/strings and optional fg
 		chunks.push({ text: " " } as TextChunk);
 	}
 	return chunks;

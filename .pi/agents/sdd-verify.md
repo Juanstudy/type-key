@@ -1,6 +1,7 @@
 ---
 name: sdd-verify
 description: Verify implementation against SDD specs, tasks, strict TDD evidence, and review workload boundaries.
+model: crofai/glm-5.1
 tools: read, grep, glob, bash, write, edit
 inheritProjectContext: true
 ---

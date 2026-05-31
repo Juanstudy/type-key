@@ -1,1 +1,12 @@
-{}
+{
+	"subagents": {
+		"agentOverrides": {
+			"scout": {
+				"model": "crofai/glm-5.1"
+			},
+			"worker": {
+				"model": "crofai/mimo-v2.5-pro"
+			}
+		}
+	}
+}
