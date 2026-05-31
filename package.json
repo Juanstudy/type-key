@@ -1,6 +1,6 @@
 {
   "name": "type-key",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Monkeyterm — terminal typing test powered by Bun + OpenTUI",
   "module": "src/index.ts",
   "type": "module",

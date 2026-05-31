@@ -406,23 +406,32 @@ type SessionResult = {
 - Modo palabras (10 · 25 · 50 · 100)
 - Menú con selección de modo y opciones
 - Pantalla de resultados con estadísticas completas
-- Gráfica WPM-over-time en resultados (asciichart)
+- Gráfica WPM con chart() (barras █, eje Y, colores)
+- Trend chart compacto con sparkArea() (3 líneas)
 - Navegación entre pantallas (Tab reinicia, Esc menú)
+- Vim-style key bindings (h/l/j/k)
+- Paginación en historial (← → / h l)
 - `lib/db.ts`: guardado de resultados en SQLite con bun:sqlite
 - Historial con stats globales, desglose por modo, trend chart
 - Detalle de sesión con resultados + chart
+- **Arquitectura modular**: `screens/menu|game|results|history.ts`, `ui/theme|chart|word-display.ts`, `lib/wordlists|state|config.ts`
+- **State extraction**: estado global y transiciones en `lib/state.ts`
+- **Barrel file**: `screens.ts` como barrel puro (7 re-exports)
 - 115 tests unitarios (strict TDD)
 - Typecheck estricto
+- SDD formal con 6 chained PRs (artifacts en `openspec/changes/`)
+- Judgment Day con dual review
 
 ### 🔜 Pendiente
 
 - Modo citas (colección local)
 - CLI flags (`--time`, `--words`, `--quotes`, `--lang`, `--history`)
 - Publicación en npm (`bun publish`)
-- Build de binarios con `bun build --compile`
+- Build de binarios con `bun build --compile` (binario standalone funcional)
 - Sistema de temas (Dracula, Nord, Catppuccin...)
 - Wordlists custom por archivo
 - Modo código (snippets de JS, Python, etc.)
+- Config persistente (`lib/config.ts` — shell listo para implementar)
 - Comparación vs promedio en pantalla de resultados
 
 ---
@@ -442,4 +451,4 @@ El MVP se considera completo cuando:
 
 ---
 
-_Monkeyterm — PRD v1.1 — Stack: Bun + OpenTUI Core_
+_Monkeyterm — PRD v1.1 — Stack: Bun + OpenTUI Core — Actualizado: 2026-05-29_

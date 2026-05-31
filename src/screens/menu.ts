@@ -3,7 +3,7 @@ import type { TextChunk } from "@opentui/core";
 import { colored } from "../ui/word-display";
 import { HEADER_FG, SELECTED_FG } from "../ui/theme";
 
-export const VERSION = "1.0.0";
+export const VERSION = "1.1.0";
 
 const MODE_LABELS = { time: "Time", words: "Words" } as const;
 
