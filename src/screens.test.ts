@@ -208,6 +208,23 @@ describe("buildMenu", () => {
 		const text = chunkText(menu.chunks);
 		expect(text).toContain("Enter");
 	});
+	it("should show quote mode description", async () => {
+		const { buildMenu } = await import("./screens");
+		const menu = buildMenu("quote", 0, []);
+		const text = chunkText(menu.chunks);
+		expect(text).toContain("Quotes");
+		expect(text).toContain("random quote");
+		expect(text).toContain("Elapsed");
+	});
+
+	it("should show all three modes in header", async () => {
+		const { buildMenu } = await import("./screens");
+		const menu = buildMenu("time", 0, [15, 30]);
+		const text = chunkText(menu.chunks);
+		expect(text).toContain("Time");
+		expect(text).toContain("Words");
+		expect(text).toContain("Quotes");
+	});
 });
 
 describe("buildResults", () => {
