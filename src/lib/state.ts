@@ -2,12 +2,13 @@ import { Text, ASCIIFont } from "@opentui/core";
 import type { CliRenderer } from "@opentui/core";
 import type {
 	GameMode,
+	Language,
+	Quote,
 	ScreenName,
 	TimeOption,
 	StoredSession,
 	SessionAggregates,
 	SessionResult,
-	Quote,
 } from "./types";
 import {
 	initDB,
@@ -50,6 +51,7 @@ const WORD_COUNT_OPTIONS = [10, 25, 50, 100] as const;
 const state: {
 	screen: ScreenName;
 	mode: GameMode;
+	language: Language;
 	selectedTimeIndex: number;
 	selectedWordCountIndex: number;
 	engine: TypingEngine | null;
@@ -72,6 +74,7 @@ const state: {
 } = {
 	screen: "menu",
 	mode: "time",
+	language: "english",
 	selectedTimeIndex: 1,
 	selectedWordCountIndex: 1,
 	engine: null,
@@ -190,9 +193,10 @@ export function goGame(): void {
 	// Determine words to use based on mode
 	let words: string[];
 	if (state.mode === "quote") {
-		const quote = getRandomQuote("english"); // TODO: use state.language when available
+		const quote = getRandomQuote(state.language);
 		if (!quote) {
-			// Fallback to words mode if no quotes available
+			// Fallback to words mode if no quotes available for language
+			console.error(`No quotes found for language "${state.language}", falling back to words mode`);
 			state.mode = "words";
 			words = shuffleWords(wordCount);
 		} else {
@@ -305,7 +309,7 @@ export function goResults(): void {
 
 		removeTitleFont();
 		// Build quote object for results screen if in quote mode
-		const quoteForResults: import("./types").Quote | undefined =
+		const quoteForResults: Quote | undefined =
 			state.currentQuoteText && state.currentQuoteSource && state.currentQuoteLength
 				? {
 						text: state.currentQuoteText,
@@ -341,8 +345,9 @@ export function goHistory(): void {
 	state.historySelectedIndex = 0;
 	state.historySessions = getSessions(10, 0);
 	state.historyAggregates = getAggregates();
+	const aggregates = state.historyAggregates;
 
-	const totalSessions = state.historyAggregates?.totalSessions ?? 0;
+	const totalSessions = aggregates?.totalSessions ?? 0;
 	state.historyTotalPages = Math.max(1, Math.ceil(totalSessions / 10));
 
 	removeTitleFont();
@@ -352,7 +357,7 @@ export function goHistory(): void {
 		show(
 			buildHistory(
 				state.historySessions,
-				state.historyAggregates!,
+				aggregates,
 				state.historyPage,
 				state.historyTotalPages,
 				state.historySelectedIndex,
@@ -473,7 +478,9 @@ export function handleKey(key: KeyEvent): void {
 			}
 			break;
 
-		case "history":
+		case "history": {
+			const aggregates = state.historyAggregates;
+			if (!aggregates) break;
 			if (key.name === "escape") {
 				goMenu();
 			} else if (key.name === "up" || key.name === "k") {
@@ -484,7 +491,7 @@ export function handleKey(key: KeyEvent): void {
 				show(
 					buildHistory(
 						state.historySessions,
-						state.historyAggregates!,
+						aggregates,
 						state.historyPage,
 						state.historyTotalPages,
 						state.historySelectedIndex,
@@ -498,7 +505,7 @@ export function handleKey(key: KeyEvent): void {
 				show(
 					buildHistory(
 						state.historySessions,
-						state.historyAggregates!,
+						aggregates,
 						state.historyPage,
 						state.historyTotalPages,
 						state.historySelectedIndex,
@@ -512,7 +519,7 @@ export function handleKey(key: KeyEvent): void {
 					show(
 						buildHistory(
 							state.historySessions,
-							state.historyAggregates!,
+							aggregates,
 							state.historyPage,
 							state.historyTotalPages,
 							state.historySelectedIndex,
@@ -527,7 +534,7 @@ export function handleKey(key: KeyEvent): void {
 					show(
 						buildHistory(
 							state.historySessions,
-							state.historyAggregates!,
+							aggregates,
 							state.historyPage,
 							state.historyTotalPages,
 							state.historySelectedIndex,
@@ -539,6 +546,7 @@ export function handleKey(key: KeyEvent): void {
 				if (selected) goHistoryDetail(selected.id);
 			}
 			break;
+		}
 
 		case "history-detail":
 			if (key.name === "escape") {
