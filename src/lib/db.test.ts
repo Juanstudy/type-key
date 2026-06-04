@@ -35,7 +35,7 @@ function makeSession(overrides: Record<string, unknown> = {}) {
 			? (overrides.timestamp as string)
 			: new Date().toISOString(),
 		mode: has(overrides, "mode")
-			? (overrides.mode as "time" | "words")
+			? (overrides.mode as "time" | "words" | "quote")
 			: "time",
 		timeOption: has(overrides, "timeOption")
 			? (overrides.timeOption as number | null)
@@ -61,6 +61,15 @@ function makeSession(overrides: Record<string, unknown> = {}) {
 		wpmHistory: has(overrides, "wpmHistory")
 			? (overrides.wpmHistory as number[])
 			: [30, 40, 50, 45, 55],
+		quoteText: has(overrides, "quoteText")
+			? (overrides.quoteText as string | null)
+			: null,
+		quoteSource: has(overrides, "quoteSource")
+			? (overrides.quoteSource as string | null)
+			: null,
+		quoteLength: has(overrides, "quoteLength")
+			? (overrides.quoteLength as "short" | "medium" | "long" | null)
+			: null,
 	};
 }
 
@@ -394,5 +403,68 @@ describe("words mode session", () => {
 		expect(session!.mode).toBe("words");
 		expect(session!.timeOption).toBeNull();
 		expect(session!.wordCount).toBe(25);
+	});
+});
+
+describe("quote mode session", () => {
+	it("should save and retrieve a quote session with metadata", () => {
+		const data = makeSession({
+			mode: "quote",
+			timeOption: null,
+			wordCount: null,
+			wpm: 72,
+			accuracy: 94,
+			quoteText: "Stay hungry, stay foolish",
+			quoteSource: "Steve Jobs",
+			quoteLength: "short",
+		});
+		const id = saveSession(data);
+		const session = getSession(id);
+
+		expect(session).not.toBeNull();
+		expect(session!.mode).toBe("quote");
+		expect(session!.quoteText).toBe("Stay hungry, stay foolish");
+		expect(session!.quoteSource).toBe("Steve Jobs");
+		expect(session!.quoteLength).toBe("short");
+		expect(session!.timeOption).toBeNull();
+		expect(session!.wordCount).toBeNull();
+	});
+
+	it("should include quote sessions in aggregates", () => {
+		saveSession(
+			makeSession({
+				mode: "quote",
+				wpm: 80,
+				accuracy: 95,
+				quoteText: "Be yourself",
+				quoteSource: "Oscar Wilde",
+				quoteLength: "short",
+			}),
+		);
+		saveSession(
+			makeSession({
+				mode: "quote",
+				wpm: 60,
+				accuracy: 90,
+				quoteText: "The journey of a thousand miles",
+				quoteSource: "Lao Tzu",
+				quoteLength: "medium",
+			}),
+		);
+
+		const agg = getAggregates();
+		expect(agg.quote.sessions).toBe(2);
+		expect(agg.quote.bestWpm).toBe(80);
+		expect(agg.quote.avgWpm).toBe(70);
+		expect(agg.quote.avgAccuracy).toBe(92.5);
+	});
+
+	it("should return zero quote stats when no quote sessions exist", () => {
+		saveSession(makeSession({ mode: "time", wpm: 50 }));
+		const agg = getAggregates();
+		expect(agg.quote.sessions).toBe(0);
+		expect(agg.quote.bestWpm).toBe(0);
+		expect(agg.quote.avgWpm).toBe(0);
+		expect(agg.quote.avgAccuracy).toBe(0);
 	});
 });

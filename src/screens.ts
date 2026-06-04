@@ -8,4 +8,5 @@ export {
 } from "./screens/history";
 export { wordText } from "./ui/word-display";
 export { shuffleWords } from "./lib/wordlists";
-export type { SessionResult } from "./lib/types";
+export { getRandomQuote, quoteToWords } from "./lib/quotes";
+export type { SessionResult, Quote } from "./lib/types";

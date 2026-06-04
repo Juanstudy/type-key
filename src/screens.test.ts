@@ -1,6 +1,6 @@
 import { describe, it, expect } from "bun:test";
 import { StyledText } from "@opentui/core";
-import type { SessionResult } from "./screens";
+import type { SessionResult, Quote } from "./screens";
 import type { StoredSession, SessionAggregates } from "./lib/types";
 
 /** Helper: create a sample session for tests */
@@ -19,6 +19,9 @@ function makeSession(overrides: Partial<StoredSession> = {}): StoredSession {
 		errors: 20,
 		durationSeconds: 30,
 		wpmHistory: [30, 40, 50, 60, 55, 70, 82],
+		quoteText: null,
+		quoteSource: null,
+		quoteLength: null,
 		...overrides,
 	};
 }
@@ -38,6 +41,7 @@ function makeAggregates(
 		totalTimeSeconds: 300,
 		time: { bestWpm: 82, avgWpm: 45, avgAccuracy: 92.5, sessions: 7 },
 		words: { bestWpm: 78, avgWpm: 40, avgAccuracy: 90.0, sessions: 3 },
+		quote: { bestWpm: 0, avgWpm: 0, avgAccuracy: 0, sessions: 0 },
 		recentWpms: [30, 40, 50, 60, 55, 70, 82, 75, 80, 78],
 		...overrides,
 	};
@@ -203,6 +207,23 @@ describe("buildMenu", () => {
 		const menu = buildMenu("time", 0, [15, 30]);
 		const text = chunkText(menu.chunks);
 		expect(text).toContain("Enter");
+	});
+	it("should show quote mode description", async () => {
+		const { buildMenu } = await import("./screens");
+		const menu = buildMenu("quote", 0, []);
+		const text = chunkText(menu.chunks);
+		expect(text).toContain("Quotes");
+		expect(text).toContain("random quote");
+		expect(text).toContain("Elapsed");
+	});
+
+	it("should show all three modes in header", async () => {
+		const { buildMenu } = await import("./screens");
+		const menu = buildMenu("time", 0, [15, 30]);
+		const text = chunkText(menu.chunks);
+		expect(text).toContain("Time");
+		expect(text).toContain("Words");
+		expect(text).toContain("Quotes");
 	});
 });
 
@@ -422,5 +443,181 @@ describe("buildHistoryDetail", () => {
 		const output = buildHistoryDetail(session);
 		const text = chunkText(output.chunks);
 		expect(text).toContain("words 50");
+	});
+});
+
+describe("buildGame", () => {
+	it("should show countdown seconds for time mode", async () => {
+		const { buildGame } = await import("./screens");
+		const words = [
+			{
+				letters: [{ char: "h", state: "untyped" as const }],
+				hasError: false,
+				isCompleted: false,
+			},
+		];
+		const output = buildGame("time", 25, 40, 50, words, 0);
+		const text = chunkText(output.chunks);
+		expect(text).toContain("25s");
+		expect(text).toContain("WPM: 40");
+	});
+
+	it("should show elapsed MM:SS for quote mode", async () => {
+		const { buildGame } = await import("./screens");
+		const words = [
+			{
+				letters: [{ char: "h", state: "untyped" as const }],
+				hasError: false,
+				isCompleted: false,
+			},
+		];
+		const output = buildGame("quote", 65, 40, 50, words, 0);
+		const text = chunkText(output.chunks);
+		expect(text).toContain("01:05");
+		expect(text).not.toContain("65s");
+	});
+
+	it("should show elapsed MM:SS for words mode", async () => {
+		const { buildGame } = await import("./screens");
+		const words = [
+			{
+				letters: [{ char: "a", state: "untyped" as const }],
+				hasError: false,
+				isCompleted: false,
+			},
+		];
+		const output = buildGame("words", 125, 55, 60, words, 0);
+		const text = chunkText(output.chunks);
+		expect(text).toContain("02:05");
+	});
+
+	it("should format single-digit seconds with leading zero in quote mode", async () => {
+		const { buildGame } = await import("./screens");
+		const words = [
+			{
+				letters: [{ char: "x", state: "untyped" as const }],
+				hasError: false,
+				isCompleted: false,
+			},
+		];
+		const output = buildGame("quote", 5, 30, 35, words, 0);
+		const text = chunkText(output.chunks);
+		expect(text).toContain("00:05");
+	});
+});
+
+describe("buildResults with quote", () => {
+	it("should show quote source attribution when quote is provided", async () => {
+		const { buildResults } = await import("./screens");
+		const result: SessionResult = {
+			wpm: 45,
+			rawWpm: 50,
+			accuracy: 92.5,
+			correctChars: 100,
+			totalChars: 110,
+			errors: 10,
+		};
+		const quote: Quote = {
+			text: "The only way to do great work is to love what you do",
+			source: "Steve Jobs",
+			length: "medium",
+		};
+		const output = buildResults(result, [], quote);
+		const text = chunkText(output.chunks);
+		expect(text).toContain("Steve Jobs");
+		expect(text).toContain("great work");
+	});
+
+	it("should truncate long quote text with ellipsis", async () => {
+		const { buildResults } = await import("./screens");
+		const result: SessionResult = {
+			wpm: 45,
+			rawWpm: 50,
+			accuracy: 92.5,
+			correctChars: 100,
+			totalChars: 110,
+			errors: 10,
+		};
+		const longText = "a".repeat(200);
+		const quote: Quote = {
+			text: longText,
+			source: "Test Source",
+			length: "long",
+		};
+		const output = buildResults(result, [], quote);
+		const text = chunkText(output.chunks);
+		expect(text).toContain("…");
+		expect(text).toContain("Test Source");
+		// Full 200-char string should NOT appear (it's truncated)
+		expect(text).not.toContain(longText);
+	});
+
+	it("should not show quote section when no quote provided", async () => {
+		const { buildResults } = await import("./screens");
+		const result: SessionResult = {
+			wpm: 45,
+			rawWpm: 50,
+			accuracy: 92.5,
+			correctChars: 100,
+			totalChars: 110,
+			errors: 10,
+		};
+		const output = buildResults(result, []);
+		const text = chunkText(output.chunks);
+		// Should still have stats
+		expect(text).toContain("45");
+		expect(text).toContain("Results");
+		// Should NOT have quote text (no quoted string)
+		expect(text).not.toMatch(/"[^"]+"/);
+	});
+});
+
+describe("buildHistory with quote sessions", () => {
+	it("should show quote source in session row", async () => {
+		const { buildHistory } = await import("./screens");
+		const sessions = [
+			makeSession({
+				id: 20,
+				wpm: 55,
+				mode: "quote",
+				timeOption: null,
+				wordCount: null,
+				quoteText: "To be or not to be",
+				quoteSource: "Shakespeare",
+				quoteLength: "short",
+			}),
+		];
+		const agg = makeAggregates();
+		const output = buildHistory(sessions, agg, 0, 1, 0);
+		const text = chunkText(output.chunks);
+		expect(text).toContain("Shakespeare");
+		expect(text).toContain("#20");
+	});
+
+	it("should show quote stats in header when quote sessions exist", async () => {
+		const { buildHistory } = await import("./screens");
+		const agg = makeAggregates({
+			quote: { bestWpm: 70, avgWpm: 55, avgAccuracy: 91.0, sessions: 3 },
+		});
+		const output = buildHistory([], agg, 0, 1, 0);
+		const text = chunkText(output.chunks);
+		expect(text).toContain("Quotes:");
+		expect(text).toContain("Best 70 WPM");
+	});
+
+	it("should show quote mode in history detail", async () => {
+		const { buildHistoryDetail } = await import("./screens");
+		const session = makeSession({
+			mode: "quote",
+			timeOption: null,
+			wordCount: null,
+			quoteText: "To be or not to be",
+			quoteSource: "Shakespeare",
+			quoteLength: "short",
+		});
+		const output = buildHistoryDetail(session);
+		const text = chunkText(output.chunks);
+		expect(text).toContain("Shakespeare");
+		expect(text).toContain("To be or not to be");
 	});
 });

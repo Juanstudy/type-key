@@ -13,6 +13,9 @@ function formatModeOption(session: StoredSession): string {
 	if (session.mode === "words" && session.wordCount !== null) {
 		return `words ${session.wordCount}`;
 	}
+	if (session.mode === "quote" && session.quoteSource) {
+		return session.quoteSource;
+	}
 	return session.mode;
 }
 
@@ -53,6 +56,12 @@ export function buildHistory(
 	if (aggregates.words.sessions > 0) {
 		lines.push(
 			`Words: Best ${aggregates.words.bestWpm} WPM  Avg ${aggregates.words.avgWpm} WPM  Acc ${aggregates.words.avgAccuracy}%  (${aggregates.words.sessions} sessions)`,
+		);
+	}
+	// Quote mode stats
+	if (aggregates.quote.sessions > 0) {
+		lines.push(
+			`Quotes: Best ${aggregates.quote.bestWpm} WPM  Avg ${aggregates.quote.avgWpm} WPM  Acc ${aggregates.quote.avgAccuracy}%  (${aggregates.quote.sessions} sessions)`,
 		);
 	}
 
@@ -120,7 +129,8 @@ export function buildHistory(
 	const sessionStart =
 		4 +
 		(aggregates.time.sessions > 0 ? 1 : 0) +
-		(aggregates.words.sessions > 0 ? 1 : 0);
+		(aggregates.words.sessions > 0 ? 1 : 0) +
+		(aggregates.quote.sessions > 0 ? 1 : 0);
 	for (let i = 0; i < sessionStart; i++) {
 		const line = lines[i]!;
 		const isTitle = i === 0;
@@ -254,6 +264,13 @@ export function buildHistoryDetail(session: StoredSession): StyledText {
 		`Chars:      ${session.correctChars} / ${session.totalChars}`,
 		`Errors:     ${session.errors}`,
 	];
+
+	// Add quote attribution for quote mode sessions
+	if (session.mode === "quote" && session.quoteText && session.quoteSource) {
+		lines.push("");
+		lines.push(`"${session.quoteText}"`);
+		lines.push(`  — ${session.quoteSource}`);
+	}
 
 	// Calculate content width from all content including chart
 	const footerLine = "Tab: Re-run · Esc: History · Ctrl+C: Quit";

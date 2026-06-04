@@ -152,19 +152,28 @@ PREFER:
 
 ---
 
-## Git Workflow (Opción A)
+## Git Workflow
 
 ```text
 main (siempre estable)
-  ↑ PR o merge
+  ↑ merge squash del tracker
   |
-dev (trabajo diario, commits directos)
+tracker/<feature> (acumula PRs encadenados)
+  ↑ PR #3 (base: PR #2 branch)
+  |
+PR #2 branch (base: PR #1 branch)
+  ↑ PR #1 (base: tracker)
+  |
+dev (trabajo diario, commits work-unit)
 ```
 
-- Trabajar en `dev` con commits directos, sin PR
-- `dev` → `main`: PR o merge cuando hay cambios estables
-- Fixes <10 líneas: pueden ir directo a `main`
-- No long-lived branches, no stacked PRs
+- Trabajar en `dev` con work-unit commits (tests + code juntos)
+- Cambios grandes (>400 líneas): **PRs encadenados** con `feature-branch-chain`
+  - PR #1 → `tracker/<feature>`; PR #2 base = PR #1 branch; PR #3 base = PR #2 branch
+  - Solo el tracker mergea a `main` (squash para mantener historial limpio)
+- Cambios chicos (<400 líneas): PR directo `dev` → `main`
+- Fixes <10 líneas: commit directo a `main`
+- Cada PR incluye tests + código + docs en work units autónomos
 
 ## Artifacts Policy (Híbrido)
 
