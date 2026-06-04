@@ -15,11 +15,6 @@
     "length": "short"
   },
   {
-    "text": "Life is what happens when you're busy making other plans",
-    "source": "John Lennon",
-    "length": "short"
-  },
-  {
     "text": "The future belongs to those who believe in the beauty of their dreams",
     "source": "Eleanor Roosevelt",
     "length": "short"
@@ -67,11 +62,6 @@
   {
     "text": "Turn your wounds into wisdom",
     "source": "Oprah Winfrey",
-    "length": "short"
-  },
-  {
-    "text": "The only limit to our realization of tomorrow is our doubts of today",
-    "source": "Franklin D. Roosevelt",
     "length": "short"
   },
   {
@@ -245,9 +235,9 @@
     "length": "short"
   },
   {
-    "text": "The only limit to our realization of tomorrow is our doubts of today",
-    "source": "Franklin D. Roosevelt",
-    "length": "short"
+    "text": "It does not matter how slowly you go as long as you do not stop",
+    "source": "Confucius",
+    "length": "medium"
   },
   {
     "text": "Do not go where the path may lead, go instead where there is no path and leave a trail",
