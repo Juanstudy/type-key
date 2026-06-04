@@ -17,6 +17,13 @@ export type GameMode = "time" | "words" | "quote";
 export type TimeOption = 15 | 30 | 60 | 120;
 export type WordCountOption = 10 | 25 | 50 | 100;
 export type Language = "english" | "spanish";
+export type QuoteLength = "short" | "medium" | "long";
+
+export interface Quote {
+	text: string;
+	source: string;
+	length: QuoteLength;
+}
 
 export interface GameConfig {
 	mode: GameMode;
@@ -28,7 +35,7 @@ export interface GameConfig {
 export interface StoredSession {
 	id: number;
 	timestamp: string;
-	mode: "time" | "words";
+	mode: GameMode;
 	timeOption: number | null;
 	wordCount: number | null;
 	wpm: number;
@@ -39,6 +46,9 @@ export interface StoredSession {
 	errors: number;
 	durationSeconds: number;
 	wpmHistory: number[];
+	quoteText: string | null;
+	quoteSource: string | null;
+	quoteLength: QuoteLength | null;
 }
 
 export type NewSession = Omit<StoredSession, "id">;
@@ -62,6 +72,7 @@ export interface SessionAggregates {
 	totalTimeSeconds: number;
 	time: ModeStats;
 	words: ModeStats;
+	quote: ModeStats;
 	recentWpms: number[];
 }
 
