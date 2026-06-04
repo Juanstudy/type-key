@@ -6,6 +6,24 @@
 			},
 			"worker": {
 				"model": "crofai/mimo-v2.5-pro"
+			},
+			"context-builder": {
+				"model": "crofai/kimi-k2.6"
+			},
+			"delegate": {
+				"model": "crofai/deepseek-v4-pro"
+			},
+			"oracle": {
+				"model": "crofai/kimi-k2.6"
+			},
+			"planner": {
+				"model": "crofai/glm-5.1"
+			},
+			"researcher": {
+				"model": "crofai/kimi-k2.5"
+			},
+			"reviewer": {
+				"model": "crofai/kimi-k2.6"
 			}
 		}
 	}

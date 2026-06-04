@@ -2,7 +2,12 @@ import { Database } from "bun:sqlite";
 import fs from "fs";
 import path from "path";
 import os from "os";
-import type { NewSession, SessionAggregates, StoredSession } from "./types";
+import type {
+	NewSession,
+	QuoteLength,
+	SessionAggregates,
+	StoredSession,
+} from "./types";
 
 let db: Database | null = null;
 
@@ -32,29 +37,109 @@ export function getDB(): Database {
 /**
  * Initialize the database schema.
  * Idempotent — safe to call multiple times.
+ * Handles migration from v1 (time/words only) to v2 (adds quote mode support).
  */
 export function initDB(): void {
 	const database = getDB();
-	database.run(`
-		CREATE TABLE IF NOT EXISTS sessions (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			timestamp TEXT NOT NULL,
-			mode TEXT NOT NULL CHECK(mode IN ('time', 'words')),
-			time_option INTEGER,
-			word_count INTEGER,
-			wpm REAL NOT NULL,
-			raw_wpm REAL NOT NULL,
-			accuracy REAL NOT NULL,
-			correct_chars INTEGER NOT NULL,
-			total_chars INTEGER NOT NULL,
-			errors INTEGER NOT NULL,
-			duration_seconds INTEGER NOT NULL,
-			wpm_history TEXT DEFAULT '[]'
-		)
-	`);
+	const needsMigration = needsSchemaMigration(database);
+
+	if (needsMigration) {
+		migrateSchema(database);
+	} else {
+		database.run(`
+			CREATE TABLE IF NOT EXISTS sessions (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				timestamp TEXT NOT NULL,
+				mode TEXT NOT NULL CHECK(mode IN ('time', 'words', 'quote')),
+				time_option INTEGER,
+				word_count INTEGER,
+				wpm REAL NOT NULL,
+				raw_wpm REAL NOT NULL,
+				accuracy REAL NOT NULL,
+				correct_chars INTEGER NOT NULL,
+				total_chars INTEGER NOT NULL,
+				errors INTEGER NOT NULL,
+				duration_seconds INTEGER NOT NULL,
+				wpm_history TEXT DEFAULT '[]',
+				quote_text TEXT,
+				quote_source TEXT,
+				quote_length TEXT
+			)
+		`);
+	}
+
 	database.run(`
 		CREATE INDEX IF NOT EXISTS idx_sessions_ts ON sessions(timestamp DESC)
 	`);
+}
+
+/**
+ * Check if existing sessions table needs migration (missing quote columns).
+ */
+function needsSchemaMigration(database: Database): boolean {
+	const tableExists = database
+		.query(
+			"SELECT name FROM sqlite_master WHERE type='table' AND name='sessions'",
+		)
+		.get();
+	if (!tableExists) return false;
+
+	const cols = database
+		.query("PRAGMA table_info(sessions)")
+		.all() as { name: string }[];
+	const colNames = new Set(cols.map((c) => c.name));
+	return !colNames.has("quote_text");
+}
+
+/**
+ * Migrate existing sessions table to v2 schema with quote support.
+ * Creates new table, copies data, drops old, renames.
+ */
+function migrateSchema(database: Database): void {
+	database.run("BEGIN TRANSACTION");
+
+	try {
+		database.run(`
+			CREATE TABLE sessions_v2 (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				timestamp TEXT NOT NULL,
+				mode TEXT NOT NULL CHECK(mode IN ('time', 'words', 'quote')),
+				time_option INTEGER,
+				word_count INTEGER,
+				wpm REAL NOT NULL,
+				raw_wpm REAL NOT NULL,
+				accuracy REAL NOT NULL,
+				correct_chars INTEGER NOT NULL,
+				total_chars INTEGER NOT NULL,
+				errors INTEGER NOT NULL,
+				duration_seconds INTEGER NOT NULL,
+				wpm_history TEXT DEFAULT '[]',
+				quote_text TEXT,
+				quote_source TEXT,
+				quote_length TEXT
+			)
+		`);
+
+		database.run(`
+			INSERT INTO sessions_v2 (
+				id, timestamp, mode, time_option, word_count,
+				wpm, raw_wpm, accuracy, correct_chars, total_chars,
+				errors, duration_seconds, wpm_history
+			)
+			SELECT
+				id, timestamp, mode, time_option, word_count,
+				wpm, raw_wpm, accuracy, correct_chars, total_chars,
+				errors, duration_seconds, wpm_history
+			FROM sessions
+		`);
+
+		database.run("DROP TABLE sessions");
+		database.run("ALTER TABLE sessions_v2 RENAME TO sessions");
+		database.run("COMMIT");
+	} catch (err) {
+		database.run("ROLLBACK");
+		throw err;
+	}
 }
 
 export function serializeHistory(arr: number[]): string {
@@ -77,7 +162,7 @@ function rowToSession(row: Record<string, unknown>): StoredSession {
 	return {
 		id: row.id as number,
 		timestamp: row.timestamp as string,
-		mode: row.mode as "time" | "words",
+		mode: row.mode as StoredSession["mode"],
 		timeOption: (row.time_option as number | null) ?? null,
 		wordCount: (row.word_count as number | null) ?? null,
 		wpm: row.wpm as number,
@@ -88,6 +173,9 @@ function rowToSession(row: Record<string, unknown>): StoredSession {
 		errors: row.errors as number,
 		durationSeconds: row.duration_seconds as number,
 		wpmHistory: parseHistory(row.wpm_history as string),
+		quoteText: (row.quote_text as string | null) ?? null,
+		quoteSource: (row.quote_source as string | null) ?? null,
+		quoteLength: (row.quote_length as QuoteLength | null) ?? null,
 	};
 }
 
@@ -98,8 +186,8 @@ function rowToSession(row: Record<string, unknown>): StoredSession {
 export function saveSession(data: NewSession): number {
 	const database = getDB();
 	const query = database.query(`
-		INSERT INTO sessions (timestamp, mode, time_option, word_count, wpm, raw_wpm, accuracy, correct_chars, total_chars, errors, duration_seconds, wpm_history)
-		VALUES ($timestamp, $mode, $timeOption, $wordCount, $wpm, $rawWpm, $accuracy, $correctChars, $totalChars, $errors, $durationSeconds, $wpmHistory)
+		INSERT INTO sessions (timestamp, mode, time_option, word_count, wpm, raw_wpm, accuracy, correct_chars, total_chars, errors, duration_seconds, wpm_history, quote_text, quote_source, quote_length)
+		VALUES ($timestamp, $mode, $timeOption, $wordCount, $wpm, $rawWpm, $accuracy, $correctChars, $totalChars, $errors, $durationSeconds, $wpmHistory, $quoteText, $quoteSource, $quoteLength)
 	`);
 	const result = query.run({
 		$timestamp: data.timestamp,
@@ -114,6 +202,9 @@ export function saveSession(data: NewSession): number {
 		$errors: data.errors,
 		$durationSeconds: data.durationSeconds,
 		$wpmHistory: serializeHistory(data.wpmHistory),
+		$quoteText: data.quoteText ?? null,
+		$quoteSource: data.quoteSource ?? null,
+		$quoteLength: data.quoteLength ?? null,
 	}) as { lastInsertRowid: number };
 	return Number(result.lastInsertRowid);
 }
@@ -210,6 +301,7 @@ export function getAggregates(): SessionAggregates {
 
 	const timeStats = modeAggQuery(database, "time");
 	const wordsStats = modeAggQuery(database, "words");
+	const quoteStats = modeAggQuery(database, "quote");
 
 	// Last 15 sessions' WPMs for trend chart
 	const recentRows = database
@@ -239,6 +331,12 @@ export function getAggregates(): SessionAggregates {
 			avgWpm: wordsStats.avgWpm,
 			avgAccuracy: wordsStats.avgAccuracy,
 			sessions: wordsStats.count,
+		},
+		quote: {
+			bestWpm: quoteStats.bestWpm,
+			avgWpm: quoteStats.avgWpm,
+			avgAccuracy: quoteStats.avgAccuracy,
+			sessions: quoteStats.count,
 		},
 		recentWpms,
 	};

@@ -19,6 +19,9 @@ function makeSession(overrides: Partial<StoredSession> = {}): StoredSession {
 		errors: 20,
 		durationSeconds: 30,
 		wpmHistory: [30, 40, 50, 60, 55, 70, 82],
+		quoteText: null,
+		quoteSource: null,
+		quoteLength: null,
 		...overrides,
 	};
 }
@@ -38,6 +41,7 @@ function makeAggregates(
 		totalTimeSeconds: 300,
 		time: { bestWpm: 82, avgWpm: 45, avgAccuracy: 92.5, sessions: 7 },
 		words: { bestWpm: 78, avgWpm: 40, avgAccuracy: 90.0, sessions: 3 },
+		quote: { bestWpm: 0, avgWpm: 0, avgAccuracy: 0, sessions: 0 },
 		recentWpms: [30, 40, 50, 60, 55, 70, 82, 75, 80, 78],
 		...overrides,
 	};

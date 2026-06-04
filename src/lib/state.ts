@@ -1,6 +1,7 @@
 import { Text, ASCIIFont } from "@opentui/core";
 import type { CliRenderer } from "@opentui/core";
 import type {
+	GameMode,
 	ScreenName,
 	TimeOption,
 	StoredSession,
@@ -46,7 +47,7 @@ const WORD_COUNT_OPTIONS = [10, 25, 50, 100] as const;
 
 const state: {
 	screen: ScreenName;
-	mode: "time" | "words";
+	mode: GameMode;
 	selectedTimeIndex: number;
 	selectedWordCountIndex: number;
 	engine: TypingEngine | null;
@@ -255,6 +256,9 @@ export function goResults(): void {
 			errors: state.result.errors,
 			durationSeconds: state.elapsedSeconds,
 			wpmHistory: state.wpmHistory,
+			quoteText: null,
+			quoteSource: null,
+			quoteLength: null,
 		});
 
 		removeTitleFont();
