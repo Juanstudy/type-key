@@ -22,22 +22,37 @@ export function buildMenu(
 	// Title
 	chunks.push(colored(`Monkeyterm v${VERSION}\n\n`, HEADER_FG));
 
-	// Mode header
+	// Mode header — show all 3 modes with position indicator
 	const modes: GameMode[] = ["time", "words", "quote"];
 	const currentIdx = modes.indexOf(mode);
-	const otherMode = modes[(currentIdx + 1) % modes.length] ?? "words";
-	chunks.push(colored(MODE_LABELS[mode], SELECTED_FG));
-	chunks.push(...stringToStyledText(`  ·  ${MODE_LABELS[otherMode]}\n\n`).chunks);
+	const modeLabels = modes.map((m, i) => {
+		const label = MODE_LABELS[m];
+		if (i === currentIdx) return label; // current is highlighted separately
+		return label;
+	});
 
-	// Options
-	const suffix = mode === "time" ? "s" : mode === "words" ? " words" : "";
-	for (let i = 0; i < options.length; i++) {
-		const sel = i === selectedIndex;
-		if (sel) {
-			chunks.push(colored(`▸ ${options[i]}${suffix}\n`, SELECTED_FG));
-		} else {
-			chunks.push(...stringToStyledText(`  ${options[i]}${suffix}\n`).chunks);
+	// Show current mode highlighted, others muted
+	const prevMode = modes[(currentIdx - 1 + modes.length) % modes.length] ?? "time";
+	const nextMode = modes[(currentIdx + 1) % modes.length] ?? "words";
+	chunks.push(...stringToStyledText(`${MODE_LABELS[prevMode]}  ·  `).chunks);
+	chunks.push(colored(MODE_LABELS[mode], SELECTED_FG));
+	chunks.push(...stringToStyledText(`  ·  ${MODE_LABELS[nextMode]}\n\n`).chunks);
+
+	// Options (only for time/words modes)
+	if (options.length > 0) {
+		const suffix = mode === "time" ? "s" : mode === "words" ? " words" : "";
+		for (let i = 0; i < options.length; i++) {
+			const sel = i === selectedIndex;
+			if (sel) {
+				chunks.push(colored(`▸ ${options[i]}${suffix}\n`, SELECTED_FG));
+			} else {
+				chunks.push(...stringToStyledText(`  ${options[i]}${suffix}\n`).chunks);
+			}
 		}
+	} else {
+		// Quote mode: show a description
+		chunks.push(...stringToStyledText("  Type a random quote\n").chunks);
+		chunks.push(...stringToStyledText("  Elapsed time tracking\n").chunks);
 	}
 
 	// Hints
