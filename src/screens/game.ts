@@ -1,11 +1,19 @@
 import { StyledText } from "@opentui/core";
 import type { TextChunk } from "@opentui/core";
-import type { Word } from "../lib/types";
+import type { GameMode, Word } from "../lib/types";
 import { colored, wordText } from "../ui/word-display";
 import { HEADER_FG } from "../ui/theme";
 
+/** Format elapsed seconds as MM:SS */
+function formatElapsed(totalSeconds: number): string {
+	const mins = Math.floor(totalSeconds / 60);
+	const secs = totalSeconds % 60;
+	return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+}
+
 export function buildGame(
-	remainingSeconds: number,
+	mode: GameMode,
+	seconds: number,
 	liveWpm: number,
 	liveRawWpm: number,
 	words: Word[],
@@ -14,9 +22,11 @@ export function buildGame(
 	const chunks: TextChunk[] = [];
 
 	// Header — muted color
+	const timeDisplay =
+		mode === "time" ? `${seconds}s` : formatElapsed(seconds);
 	chunks.push(
 		colored(
-			`⏱ ${remainingSeconds}s    WPM: ${liveWpm}  RAW: ${liveRawWpm}\n\n`,
+			`⏱ ${timeDisplay}    WPM: ${liveWpm}  RAW: ${liveRawWpm}\n\n`,
 			HEADER_FG,
 		),
 	);

@@ -2,6 +2,8 @@ import { Text, ASCIIFont } from "@opentui/core";
 import type { CliRenderer } from "@opentui/core";
 import type {
 	GameMode,
+	Language,
+	Quote,
 	ScreenName,
 	TimeOption,
 	StoredSession,
@@ -18,6 +20,7 @@ import {
 import { TypingEngine } from "../engine/typing";
 import { Timer } from "../engine/timer";
 import { WPMCalculator } from "../engine/wpm";
+import { getRandomQuote, quoteToWords } from "./quotes";
 import {
 	shuffleWords,
 	buildMenu,
@@ -48,6 +51,7 @@ const WORD_COUNT_OPTIONS = [10, 25, 50, 100] as const;
 const state: {
 	screen: ScreenName;
 	mode: GameMode;
+	language: Language;
 	selectedTimeIndex: number;
 	selectedWordCountIndex: number;
 	engine: TypingEngine | null;
@@ -64,9 +68,13 @@ const state: {
 	historySessions: StoredSession[];
 	historyAggregates: SessionAggregates | null;
 	historyDetailSession: StoredSession | null;
+	currentQuoteText: string | null;
+	currentQuoteSource: string | null;
+	currentQuoteLength: Quote["length"] | null;
 } = {
 	screen: "menu",
 	mode: "time",
+	language: "english",
 	selectedTimeIndex: 1,
 	selectedWordCountIndex: 1,
 	engine: null,
@@ -83,6 +91,9 @@ const state: {
 	historySessions: [],
 	historyAggregates: null,
 	historyDetailSession: null,
+	currentQuoteText: null,
+	currentQuoteSource: null,
+	currentQuoteLength: null,
 };
 
 const wpmCalc = new WPMCalculator();
@@ -123,14 +134,18 @@ function removeTitleFont(): void {
 	renderer.root.remove(TITLE_FONT_ID);
 }
 
+const MODES: GameMode[] = ["time", "words", "quote"];
+
 function getMenuOptions(): number[] {
-	return state.mode === "time" ? [...TIME_OPTIONS] : [...WORD_COUNT_OPTIONS];
+	if (state.mode === "time") return [...TIME_OPTIONS];
+	if (state.mode === "words") return [...WORD_COUNT_OPTIONS];
+	return []; // quote mode has no configurable options
 }
 
 function getMenuSelectedIndex(): number {
-	return state.mode === "time"
-		? state.selectedTimeIndex
-		: state.selectedWordCountIndex;
+	if (state.mode === "time") return state.selectedTimeIndex;
+	if (state.mode === "words") return state.selectedWordCountIndex;
+	return 0; // quote mode has no options to select
 }
 
 export function goMenu(): void {
@@ -165,30 +180,60 @@ export function goGame(): void {
 	const wordCount = WORD_COUNT_OPTIONS[state.selectedWordCountIndex] ?? 50;
 	const timeOpt = TIME_OPTIONS[state.selectedTimeIndex] ?? 30;
 	state.screen = "game";
-	state.engine = new TypingEngine(shuffleWords(wordCount));
 	state.result = null;
 	state.gameStarted = false;
 	state.liveWpm = 0;
 	state.liveRawWpm = 0;
 	state.elapsedSeconds = 0;
 	state.wpmHistory = [];
+	state.currentQuoteText = null;
+	state.currentQuoteSource = null;
+	state.currentQuoteLength = null;
+
+	// Determine words to use based on mode
+	let words: string[];
+	if (state.mode === "quote") {
+		const quote = getRandomQuote(state.language);
+		if (!quote) {
+			// Fallback to words mode if no quotes available for language
+			console.error(`No quotes found for language "${state.language}", falling back to words mode`);
+			state.mode = "words";
+			words = shuffleWords(wordCount);
+		} else {
+			words = quoteToWords(quote);
+			state.currentQuoteText = quote.text;
+			state.currentQuoteSource = quote.source;
+			state.currentQuoteLength = quote.length;
+		}
+	} else {
+		words = shuffleWords(wordCount);
+	}
+
+	state.engine = new TypingEngine(words);
 
 	removeTitleFont();
 	if (state.timer) state.timer.stop();
+
+	// For quote/words modes, use a large duration (timer is for stats only, no countdown)
+	const timerDuration = state.mode === "time" ? timeOpt : 9999;
+
 	state.timer = new Timer(
-		timeOpt,
+		timerDuration,
 		{
 			onStart: () => {},
 			onTick: (remainingSec: number) => {
-				state.elapsedSeconds = timeOpt - remainingSec;
+				state.elapsedSeconds =
+					state.mode === "time"
+						? timeOpt - remainingSec
+						: timerDuration - Math.ceil(remainingSec);
 				updateLiveWpm();
 				showGame();
-				// In words mode, check completion on every tick
-				if (state.mode === "words") checkGameComplete();
+				// In words/quote mode, check completion on every tick
+				if (state.mode === "words" || state.mode === "quote") checkGameComplete();
 			},
 			onComplete: () => {
 				// Time mode: timer reaching 0 ends the game
-				// Words mode: timer is for stats only, completion checked elsewhere
+				// Words/quote mode: timer is for stats only, completion checked elsewhere
 				if (state.mode === "time") goResults();
 			},
 		},
@@ -204,7 +249,8 @@ function showGame(): void {
 	const remaining = Math.ceil(state.timer.getRemainingSeconds());
 	show(
 		buildGame(
-			remaining,
+			state.mode,
+			state.mode === "time" ? remaining : state.elapsedSeconds,
 			state.liveWpm,
 			state.liveRawWpm,
 			gs.words,
@@ -256,13 +302,22 @@ export function goResults(): void {
 			errors: state.result.errors,
 			durationSeconds: state.elapsedSeconds,
 			wpmHistory: state.wpmHistory,
-			quoteText: null,
-			quoteSource: null,
-			quoteLength: null,
+			quoteText: state.currentQuoteText,
+			quoteSource: state.currentQuoteSource,
+			quoteLength: state.currentQuoteLength,
 		});
 
 		removeTitleFont();
-		show(buildResults(state.result, state.wpmHistory));
+		// Build quote object for results screen if in quote mode
+		const quoteForResults: Quote | undefined =
+			state.currentQuoteText && state.currentQuoteSource && state.currentQuoteLength
+				? {
+						text: state.currentQuoteText,
+						source: state.currentQuoteSource,
+						length: state.currentQuoteLength,
+					}
+				: undefined;
+		show(buildResults(state.result, state.wpmHistory, quoteForResults));
 	}
 }
 
@@ -290,8 +345,9 @@ export function goHistory(): void {
 	state.historySelectedIndex = 0;
 	state.historySessions = getSessions(10, 0);
 	state.historyAggregates = getAggregates();
+	const aggregates = state.historyAggregates;
 
-	const totalSessions = state.historyAggregates?.totalSessions ?? 0;
+	const totalSessions = aggregates?.totalSessions ?? 0;
 	state.historyTotalPages = Math.max(1, Math.ceil(totalSessions / 10));
 
 	removeTitleFont();
@@ -301,7 +357,7 @@ export function goHistory(): void {
 		show(
 			buildHistory(
 				state.historySessions,
-				state.historyAggregates!,
+				aggregates,
 				state.historyPage,
 				state.historyTotalPages,
 				state.historySelectedIndex,
@@ -338,18 +394,26 @@ export function handleKey(key: KeyEvent): void {
 
 	switch (state.screen) {
 		case "menu":
-			if (key.name === "left" || key.name === "right" || key.name === "l") {
-				state.mode = state.mode === "time" ? "words" : "time";
+			if (key.name === "left") {
+				const currentIdx = MODES.indexOf(state.mode);
+				const nextIdx = (currentIdx - 1 + MODES.length) % MODES.length;
+				state.mode = MODES[nextIdx] ?? "time";
+				show(buildMenu(state.mode, getMenuSelectedIndex(), getMenuOptions()));
+			} else if (key.name === "right" || key.name === "l") {
+				const currentIdx = MODES.indexOf(state.mode);
+				const nextIdx = (currentIdx + 1) % MODES.length;
+				state.mode = MODES[nextIdx] ?? "time";
 				show(buildMenu(state.mode, getMenuSelectedIndex(), getMenuOptions()));
 			} else if (key.name === "up" || key.name === "k") {
 				if (state.mode === "time") {
 					state.selectedTimeIndex = Math.max(0, state.selectedTimeIndex - 1);
-				} else {
+				} else if (state.mode === "words") {
 					state.selectedWordCountIndex = Math.max(
 						0,
 						state.selectedWordCountIndex - 1,
 					);
 				}
+				// quote mode: no options to change
 				show(buildMenu(state.mode, getMenuSelectedIndex(), getMenuOptions()));
 			} else if (key.name === "down" || key.name === "j") {
 				if (state.mode === "time") {
@@ -357,12 +421,13 @@ export function handleKey(key: KeyEvent): void {
 						TIME_OPTIONS.length - 1,
 						state.selectedTimeIndex + 1,
 					);
-				} else {
+				} else if (state.mode === "words") {
 					state.selectedWordCountIndex = Math.min(
 						WORD_COUNT_OPTIONS.length - 1,
 						state.selectedWordCountIndex + 1,
 					);
 				}
+				// quote mode: no options to change
 				show(buildMenu(state.mode, getMenuSelectedIndex(), getMenuOptions()));
 			} else if (key.name === "return" || key.name === "enter") {
 				goGame();
@@ -392,15 +457,15 @@ export function handleKey(key: KeyEvent): void {
 			if (key.name === "backspace") {
 				state.engine.backspace();
 				showGame();
-				if (state.mode === "words") checkGameComplete();
+				if (state.mode === "words" || state.mode === "quote") checkGameComplete();
 			} else if (key.name === "space") {
 				state.engine.type(" ");
 				showGame();
-				if (state.mode === "words") checkGameComplete();
+				if (state.mode === "words" || state.mode === "quote") checkGameComplete();
 			} else if (key.name && key.name.length === 1) {
 				state.engine.type(key.name);
 				showGame();
-				if (state.mode === "words") checkGameComplete();
+				if (state.mode === "words" || state.mode === "quote") checkGameComplete();
 			}
 			break;
 		}
@@ -413,7 +478,9 @@ export function handleKey(key: KeyEvent): void {
 			}
 			break;
 
-		case "history":
+		case "history": {
+			const aggregates = state.historyAggregates;
+			if (!aggregates) break;
 			if (key.name === "escape") {
 				goMenu();
 			} else if (key.name === "up" || key.name === "k") {
@@ -424,7 +491,7 @@ export function handleKey(key: KeyEvent): void {
 				show(
 					buildHistory(
 						state.historySessions,
-						state.historyAggregates!,
+						aggregates,
 						state.historyPage,
 						state.historyTotalPages,
 						state.historySelectedIndex,
@@ -438,7 +505,7 @@ export function handleKey(key: KeyEvent): void {
 				show(
 					buildHistory(
 						state.historySessions,
-						state.historyAggregates!,
+						aggregates,
 						state.historyPage,
 						state.historyTotalPages,
 						state.historySelectedIndex,
@@ -452,7 +519,7 @@ export function handleKey(key: KeyEvent): void {
 					show(
 						buildHistory(
 							state.historySessions,
-							state.historyAggregates!,
+							aggregates,
 							state.historyPage,
 							state.historyTotalPages,
 							state.historySelectedIndex,
@@ -467,7 +534,7 @@ export function handleKey(key: KeyEvent): void {
 					show(
 						buildHistory(
 							state.historySessions,
-							state.historyAggregates!,
+							aggregates,
 							state.historyPage,
 							state.historyTotalPages,
 							state.historySelectedIndex,
@@ -479,6 +546,7 @@ export function handleKey(key: KeyEvent): void {
 				if (selected) goHistoryDetail(selected.id);
 			}
 			break;
+		}
 
 		case "history-detail":
 			if (key.name === "escape") {
@@ -499,6 +567,11 @@ export function handleKey(key: KeyEvent): void {
 							s.wordCount as (typeof WORD_COUNT_OPTIONS)[number],
 						);
 						if (idx >= 0) state.selectedWordCountIndex = idx;
+					} else if (s.mode === "quote") {
+						// For quote replay, set quote metadata so goResults can save it
+						state.currentQuoteText = s.quoteText;
+						state.currentQuoteSource = s.quoteSource;
+						state.currentQuoteLength = s.quoteLength;
 					}
 					goGame();
 				}
